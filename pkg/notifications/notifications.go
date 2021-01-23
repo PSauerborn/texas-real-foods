@@ -9,5 +9,5 @@ type ChangeNotification struct{}
 
 // define interface for engine
 type NotificationEngine interface{
-	SendNotification(notification ChangeNotification) error
+    SendNotification(notification ChangeNotification) error
 }
