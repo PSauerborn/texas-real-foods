@@ -11,6 +11,10 @@ type NewAssetRequest struct{
     BusinessURI   string    `json:"business_uri"   validate:"required"`
 }
 
+type AssetUpdateRequest struct{
+    BusinessURI string `json:"business_uri" validate:"required"`
+}
+
 type BusinessInfo struct{
     BusinessName   string    `json:"business_name"`
     BusinessId	   uuid.UUID `json:"business_id"`

@@ -3,7 +3,11 @@ package utils
 import (
     "fmt"
     "strings"
+    "errors"
     "regexp"
+    "bytes"
+    "net/http"
+    "encoding/json"
 
     log "github.com/sirupsen/logrus"
 )
@@ -18,6 +22,12 @@ var (
         "us-2": regexp.MustCompile(`((\(\d{3}\)?)|(\d{3}))([\s-./]?)(\d{3})([\s-./]?)(\d{4})`),
         "us-3": regexp.MustCompile(`\(?[\d]{3}\)?[\s-]?[\d]{3}[\s-]?[\d]{4}`),
     }
+
+    // define URI for requests
+    PhoneNumberURI = "http://localhost:10847/validate"
+
+    // define custom errors
+    ErrInvalidAPIResponse = errors.New("Received invalid response from phone API")
 )
 
 
@@ -42,7 +52,7 @@ func CleanNumber(number string) string {
 }
 
 // helper function used to parse contents of a string
-// and search for regex
+// and search for phone numbers by regex matches
 func GetPhoneNumbersByRegex(text string) []string {
     matches := []string{}
     // iterate over regexes and find matches
@@ -62,4 +72,61 @@ func GetPhoneNumbersByRegex(text string) []string {
     }
     log.Info(fmt.Sprintf("found phone number matches for numbers %+v", matches))
     return matches
+}
+
+
+type PhoneNumberValidationResponse struct{
+    HTTPCode int                          `json:"http_code"`
+    Data     PhoneNumberValidationResults `json:"data"`
+}
+
+type PhoneNumberValidationResults struct{
+    Valid   []string `json:"valid"`
+    Invalid []string `json:"invalid"`
+}
+
+type PhoneNumberValidationRequest struct{
+    CountryCode string   `json:"country_code"`
+    Numbers     []string `json:"numbers"`
+}
+
+// function used to validate phone numbers against phonenumber validation API
+func ValidatePhoneNumbers(numbers []string) (PhoneNumberValidationResults, error) {
+    log.Debug(fmt.Sprintf("validating phone numbers against API"))
+
+    request := PhoneNumberValidationRequest{
+        CountryCode: "US",
+        Numbers: numbers,
+    }
+    // convert payload to JSON format
+    jsonData, err := json.Marshal(request)
+    if err != nil {
+        log.Error(fmt.Errorf("unable to convert numbers to JSON: %+v", err))
+        return PhoneNumberValidationResults{}, err
+    }
+    req, err := http.NewRequest("POST", PhoneNumberURI, bytes.NewBuffer(jsonData))
+    req.Header.Set("Content-Type", "application/json")
+
+    // generate new HTTP client and execute request
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+        log.Error(fmt.Errorf("unable to execute HTTP request"))
+        return PhoneNumberValidationResults{}, err
+    }
+    defer resp.Body.Close()
+
+    // if API request was successful, parse JSON body and response
+    if resp.StatusCode != 200 {
+        log.Error(fmt.Sprintf("received invalid API response with code %d", resp.StatusCode))
+        return PhoneNumberValidationResults{}, ErrInvalidAPIResponse
+    }
+
+    // convert response to JSON format
+    var response PhoneNumberValidationResponse
+    if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+        log.Error(fmt.Errorf("unable to parse JSON response from API"))
+        return PhoneNumberValidationResults{}, ErrInvalidAPIResponse
+    }
+    return response.Data, nil
 }

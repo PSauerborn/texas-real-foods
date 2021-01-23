@@ -103,3 +103,43 @@ func(db *Persistence) GetAssets() ([]BusinessInfo, error) {
     }
     return results, nil
 }
+
+func(db *Persistence) GetAssetById(assetId uuid.UUID) (BusinessInfo, error) {
+    log.Debug(fmt.Sprintf("retrieving asset with ID %s", assetId))
+
+    query := `SELECT asset_metadata.business_name, asset_metadata.added,
+        asset_data.uri, asset_data.phone, asset_data.website_live, asset_metadata.last_update FROM asset_metadata
+        INNER JOIN asset_data ON asset_metadata.business_id = asset_data.business_id WHERE asset_metadata.asset_id=$1
+    `
+    var (businessName, businessUri string; added, lastUpdated time.Time)
+    var (businessPhones []string; websiteLive bool)
+    // retrieve asset from database
+    err := db.Session.QueryRow(context.Background(), query, assetId.String()).Scan(
+        &businessName, &added, &businessUri, &businessPhones, &websiteLive, &lastUpdated)
+    if err != nil {
+        switch err {
+        case pgx.ErrNoRows:
+            return BusinessInfo{}, ErrAssetNotFound
+        default:
+            return BusinessInfo{}, err
+        }
+    }
+
+    info := BusinessInfo{
+        BusinessName: businessName,
+        BusinessId: assetId,
+        BusinessURI: businessUri,
+        WebsiteLive: websiteLive,
+        BusinessPhones: businessPhones,
+        LastUpdate: lastUpdated,
+        Added: added,
+    }
+    return  info, nil
+}
+
+func(db *Persistence) UpdateAssetURI(uri string, assetId uuid.UUID) error {
+    log.Debug(fmt.Sprintf("updating asset URI for asset %s", assetId))
+    query := `UPDATE asset_data SET uri=$1 WHERE business_id=$2`
+    _, err := db.Session.Exec(context.Background(), query, uri, assetId)
+    return err
+}

@@ -11,7 +11,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 go build cmd/api/main.go
+RUN CGO_ENABLED=0 go build cmd/auto-updater/main.go
 
 FROM alpine:latest as server
 

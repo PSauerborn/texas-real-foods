@@ -105,6 +105,13 @@ func(connector *WebConnector) ParseSiteData(asset connectors.BusinessInfo,
     log.Info(fmt.Sprintf("received and parsing %d bytes of data", len(data)))
     // parse site data for phone numbers by using regex expressions
     phones := utils.GetPhoneNumbersByRegex(string(data))
-    asset.BusinessPhones = phones
+    results, err := utils.ValidatePhoneNumbers(phones)
+    if err != nil {
+        log.Error(fmt.Errorf("unable to verify phone numbers with API: %+v", err))
+        return connectors.BusinessInfo{}, err
+    }
+    log.Debug(fmt.Sprintf("Phone API returned response %+v", results))
+    // assign valid phone numbers to asset
+    asset.BusinessPhones = results.Valid
     return asset, nil
 }
