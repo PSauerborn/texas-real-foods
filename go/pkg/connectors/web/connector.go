@@ -4,6 +4,7 @@ import (
     "fmt"
     "reflect"
     "errors"
+    "net/url"
 
     "github.com/gocolly/colly/v2"
     log "github.com/sirupsen/logrus"
@@ -39,11 +40,24 @@ func(connector *WebConnector) CollectData(assets []connectors.BusinessInfo) ([]c
     // generate new webscraper and save globally
     scraper = colly.NewCollector()
     scraper.AllowURLRevisit = false
+    scraper.MaxDepth = 1
+    scraper.IgnoreRobotsTxt = false
+    scraper.Async = false
 
     updatedAssets := []connectors.BusinessInfo{}
     // iterate over assets and scrape data
     for _, asset := range(assets) {
         log.Debug(fmt.Sprintf("scraping data for asset %+v", asset))
+
+        // parse url and extract host
+        host, err := url.Parse(asset.BusinessURI)
+        if err != nil {
+            log.Error(fmt.Errorf("unable to parse business URI: %+v", err))
+            continue
+        }
+        // configure scraper to only have access to host domain
+        scraper.AllowedDomains = []string{host.Host}
+
         // scrape site for updated asset information
         updated, err := connector.ScrapeSiteData(asset)
         if err != nil {
@@ -63,31 +77,45 @@ func(connector *WebConnector) CollectData(assets []connectors.BusinessInfo) ([]c
 func(connector *WebConnector) ScrapeSiteData(asset connectors.BusinessInfo) (connectors.BusinessInfo, error) {
 
     var scrapeError error
+
     // add callbacks to scraper and start
     scraper.OnRequest(func(r *colly.Request) {
         log.Debug(fmt.Sprintf("making request to site %s", r.URL))
     })
+
+    // define response handler
     scraper.OnResponse(func(r *colly.Response) {
         log.Debug(fmt.Sprintf("connected to page with code %d", r.StatusCode))
         if r.StatusCode == 200 {
+
             // parse site and extract data
-            asset, scrapeError = connector.ParseSiteData(asset, r.Body)
+            updatedAsset, scrapeError := connector.ParseSiteData(asset, r.Body)
             if scrapeError != nil {
                 log.Error(fmt.Errorf("unable to scrape site data: %+v", scrapeError))
                 return
             }
+            asset.BusinessPhones = append(asset.BusinessPhones, updatedAsset.BusinessPhones...)
         } else {
             // update asset to indicate that website is no longer active
             asset.WebsiteLive = false
         }
     })
+    // define error handler
     scraper.OnError(func(r *colly.Response, err error) {
         log.Error(fmt.Errorf("unable to scrape web data: %+v", err))
         scrapeError = err
     })
 
+    // scraper.OnHTML("a[href]", func(e *colly.HTMLElement) {
+    //     // Extract the link from the anchor HTML element
+    //     link := e.Attr("href")
+    //     // Tell the collector to visit the link
+    //     scraper.Visit(e.Request.AbsoluteURL(link))
+    // })
+
     // scrape website for data
     scraper.Visit(asset.BusinessURI)
+    scraper.Wait()
 
     // handle any error raised during scraping of website
     if scrapeError != nil {
@@ -99,6 +127,7 @@ func(connector *WebConnector) ScrapeSiteData(asset connectors.BusinessInfo) (con
     return asset, nil
 }
 
+// function used to parse data downloaded from website
 func(connector *WebConnector) ParseSiteData(asset connectors.BusinessInfo,
     data []byte) (connectors.BusinessInfo, error) {
 
