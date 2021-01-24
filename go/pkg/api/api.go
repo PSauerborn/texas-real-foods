@@ -31,9 +31,9 @@ func New() *gin.Engine {
     // create new gin router and add cors middleware
     router := gin.Default()
     router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
-		AllowCredentials: true,
-	}))
+        AllowOrigins:     []string{"*"},
+        AllowCredentials: true,
+    }))
 
     // add route to retrieve assets
     router.GET("/texas-real-foods/assets", PostgresSessionMiddleware(), getAssetsHandler)
