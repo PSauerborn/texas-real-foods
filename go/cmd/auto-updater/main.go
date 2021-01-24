@@ -1,6 +1,9 @@
 package main
 
 import (
+    "fmt"
+    "strconv"
+
     log "github.com/sirupsen/logrus"
 
     "texas_real_foods/pkg/connectors/web"
@@ -15,6 +18,7 @@ var (
         map[string]string{
             "postgres_url": "postgres://postgres:postgres-dev@192.168.99.100:5432",
             "phone_validation_api_host": "http://localhost:10847",
+            "collection_interval_minutes": "180",
         },
     )
 )
@@ -26,6 +30,14 @@ func main() {
     connector := connectors.NewWebConnector(environConfig.Get("phone_validation_api_host"))
     notify := notifications.NewDefaultNotificationEngine(environConfig.Get("postgres_url"))
 
+    intervalString := environConfig.Get("collection_interval_minutes")
+    // convert given interval from string to integer
+    interval, err := strconv.Atoi(intervalString)
+    if err != nil {
+        panic(fmt.Sprintf("received invalid collection interval '%s'", intervalString))
+    }
+
+
     // create new updater with data connector and run
-    updater.New(connector, 10, notify, environConfig.Get("postgres_url")).Run()
+    updater.New(connector, interval, notify, environConfig.Get("postgres_url")).Run()
 }

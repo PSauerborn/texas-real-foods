@@ -86,7 +86,7 @@ func(updater *AutoUpdater) ProcessAssets(assets []connectors.BusinessInfo) error
 func(updater *AutoUpdater) Run() {
     log.Info(fmt.Sprintf("starting new asset auto-updater with collection interval %d", updater.CollectionPeriodMinutes))
     // generate ticker and channel for messages
-    ticker := time.NewTicker(time.Duration(updater.CollectionPeriodMinutes) * time.Second)
+    ticker := time.NewTicker(time.Duration(updater.CollectionPeriodMinutes) * time.Minute)
     quitChan := make(chan bool)
 
     var wg sync.WaitGroup
