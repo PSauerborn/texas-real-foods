@@ -22,11 +22,13 @@ var (
 )
 
 
-func NewWebConnector() *WebConnector {
-    return &WebConnector{}
+func NewWebConnector(phoneApiHost string) *WebConnector {
+    return &WebConnector{phoneApiHost}
 }
 
-type WebConnector struct{}
+type WebConnector struct{
+    PhoneValidationAPIHost string
+}
 
 // function used to scrape sites for updated asset data
 func(connector *WebConnector) Name() string {
@@ -89,12 +91,12 @@ func(connector *WebConnector) ScrapeSiteData(asset connectors.BusinessInfo) (con
         if r.StatusCode == 200 {
 
             // parse site and extract data
-            updatedAsset, scrapeError := connector.ParseSiteData(asset, r.Body)
+            asset, scrapeError = connector.ParseSiteData(asset, r.Body)
             if scrapeError != nil {
                 log.Error(fmt.Errorf("unable to scrape site data: %+v", scrapeError))
                 return
             }
-            asset.BusinessPhones = append(asset.BusinessPhones, updatedAsset.BusinessPhones...)
+            // asset.BusinessPhones = append(asset.BusinessPhones, updatedAsset.BusinessPhones...)
         } else {
             // update asset to indicate that website is no longer active
             asset.WebsiteLive = false
@@ -134,7 +136,7 @@ func(connector *WebConnector) ParseSiteData(asset connectors.BusinessInfo,
     log.Info(fmt.Sprintf("received and parsing %d bytes of data", len(data)))
     // parse site data for phone numbers by using regex expressions
     phones := utils.GetPhoneNumbersByRegex(string(data))
-    results, err := utils.ValidatePhoneNumbers(phones)
+    results, err := utils.ValidatePhoneNumbers(connector.PhoneValidationAPIHost, phones)
     if err != nil {
         log.Error(fmt.Errorf("unable to verify phone numbers with API: %+v", err))
         return connectors.BusinessInfo{}, err

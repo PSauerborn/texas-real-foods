@@ -1,0 +1,41 @@
+version: '3.7'
+services:
+
+  validation-api:
+    build: ./python
+    container_name: phone-validation-api
+    networks:
+    - core
+    - texas-real-foods
+
+  api:
+    build:
+      context: ./go
+      dockerfile: cmd/api/Dockerfile
+    container_name: texas-real-food-api
+    networks:
+    - core
+    - postgres
+    - texas-real-foods
+    env_file:
+    - go/cmd/api/.env
+
+  updater:
+    build:
+      context: ./go
+      dockerfile: cmd/auto-updater/Dockerfile
+    container_name: texas-real-food-updater
+    networks:
+    - core
+    - postgres
+    - texas-real-foods
+    env_file:
+    - go/cmd/auto-updater/.env
+
+networks:
+  core:
+    name: core
+  postgres:
+    name: postgres
+  texas-real-foods:
+    name: texas-real-foods

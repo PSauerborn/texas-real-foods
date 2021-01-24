@@ -23,14 +23,12 @@ var (
         "us-3": regexp.MustCompile(`\(?[\d]{3}\)?[\s-]?[\d]{3}[\s-]?[\d]{4}`),
     }
 
-    // define URI for requests
-    PhoneNumberURI = "http://localhost:10847/validate"
-
     // define custom errors
     ErrInvalidAPIResponse = errors.New("Received invalid response from phone API")
 )
 
-
+// helper function used to check if a string slice contains
+// a particular string value
 func StringSliceContains(str string, items []string) bool {
     for _, item := range(items) {
         if str == item {
@@ -40,6 +38,8 @@ func StringSliceContains(str string, items []string) bool {
     return false
 }
 
+// helper function used to clean common punctuations from
+// a phone number to prevent duplicate numbers
 func CleanNumber(number string) string {
     var cleaned string
     // remove all common string occurrences
@@ -91,7 +91,7 @@ type PhoneNumberValidationRequest struct{
 }
 
 // function used to validate phone numbers against phonenumber validation API
-func ValidatePhoneNumbers(numbers []string) (PhoneNumberValidationResults, error) {
+func ValidatePhoneNumbers(apiHost string, numbers []string) (PhoneNumberValidationResults, error) {
     log.Debug(fmt.Sprintf("validating phone numbers against API"))
 
     request := PhoneNumberValidationRequest{
@@ -104,7 +104,7 @@ func ValidatePhoneNumbers(numbers []string) (PhoneNumberValidationResults, error
         log.Error(fmt.Errorf("unable to convert numbers to JSON: %+v", err))
         return PhoneNumberValidationResults{}, err
     }
-    req, err := http.NewRequest("POST", PhoneNumberURI, bytes.NewBuffer(jsonData))
+    req, err := http.NewRequest("POST", fmt.Sprintf("%s/validate", apiHost), bytes.NewBuffer(jsonData))
     req.Header.Set("Content-Type", "application/json")
 
     // generate new HTTP client and execute request

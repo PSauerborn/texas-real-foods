@@ -9,11 +9,21 @@ import (
     "github.com/gin-contrib/cors"
     "github.com/google/uuid"
     log "github.com/sirupsen/logrus"
+
+    "texas_real_foods/pkg/utils"
 )
+
 
 var (
     // define custom errors
     ErrAssetNotFound = errors.New("Cannot find specified asset")
+
+    // create map to house environment variables
+    environConfig = utils.NewConfigMapWithValues(
+        map[string]string{
+            "postgres_url": "postgres://postgres:postgres-dev@192.168.99.100:5432",
+        },
+    )
 )
 
 

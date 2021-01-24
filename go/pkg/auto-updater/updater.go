@@ -9,30 +9,36 @@ import (
     log "github.com/sirupsen/logrus"
 
     "texas_real_foods/pkg/connectors"
+    "texas_real_foods/pkg/notifications"
 )
 
 var (
-    postgresURL = "postgres://postgres:postgres-dev@192.168.99.100:5432/postgres"
+
 )
 
 // function used to create new auto updater
-func New(connector connectors.AutoUpdateDataConnector,
-    collectionPeriod int) *AutoUpdater {
+func New(connector connectors.AutoUpdateDataConnector, collectionPeriod int,
+    notificationEngine notifications.NotificationEngine,
+    postgresUrl string) *AutoUpdater {
     return &AutoUpdater{
+        PostgresURL: postgresUrl,
         DataConnector: connector,
         CollectionPeriodMinutes: collectionPeriod,
+        NotificationEngine: notificationEngine,
     }
 }
 
 type AutoUpdater struct{
-    DataConnector connectors.AutoUpdateDataConnector
+    PostgresURL             string
     CollectionPeriodMinutes int
+    DataConnector           connectors.AutoUpdateDataConnector
+    NotificationEngine      notifications.NotificationEngine
 }
 
 // function used to process asset information
 func(updater *AutoUpdater) GetCurrentAssets() ([]connectors.BusinessInfo, error) {
     // establish new connection to postgres persistence
-    db := NewPersistence(postgresURL)
+    db := NewPersistence(updater.PostgresURL)
     conn, err := db.Connect()
     if err != nil {
         log.Error(fmt.Errorf("unable to retrieve assets from postgres: %+v", err))
@@ -46,7 +52,7 @@ func(updater *AutoUpdater) GetCurrentAssets() ([]connectors.BusinessInfo, error)
 // function used to process asset information
 func(updater *AutoUpdater) ProcessAssets(assets []connectors.BusinessInfo) error {
     // establish new connection to postgres persistence
-    db := NewPersistence(postgresURL)
+    db := NewPersistence(updater.PostgresURL)
     conn, err := db.Connect()
     if err != nil {
         log.Error(fmt.Errorf("unable to retrieve assets from postgres: %+v", err))
@@ -58,6 +64,19 @@ func(updater *AutoUpdater) ProcessAssets(assets []connectors.BusinessInfo) error
     for _, asset := range(assets) {
         if err := db.UpdateAsset(asset); err != nil {
             log.Error(fmt.Errorf("unable to update asset '%s': %+v", asset.BusinessName, err))
+        }
+
+        // generate new notification and send via engine
+        notification := notifications.ChangeNotification{
+            BusinessId: asset.BusinessId,
+            BusinessName: asset.BusinessName,
+            EventTimestamp: time.Now(),
+            Notification: fmt.Sprintf("found new phone numbers %+v", asset.BusinessPhones),
+        }
+        // send update notification and display errors
+        err := updater.NotificationEngine.SendNotification(notification)
+        if err != nil {
+            log.Warn(fmt.Errorf("unable to send update notification: %+v", err))
         }
     }
     return nil
