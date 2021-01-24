@@ -36,14 +36,14 @@ func New() *gin.Engine {
 	}))
 
     // add route to retrieve assets
-    router.GET("/assets", PostgresSessionMiddleware(), getAssetsHandler)
+    router.GET("/texas-real-foods/assets", PostgresSessionMiddleware(), getAssetsHandler)
 
     // add route to create new asset
-    router.POST("/asset", PostgresSessionMiddleware(), addNewAssetHandler)
+    router.POST("/texas-real-foods/asset", PostgresSessionMiddleware(), addNewAssetHandler)
 
     // add routes to modify assets
-    router.PATCH("/asset/:assetId", PostgresSessionMiddleware(), updateAssetHandler)
-    router.DELETE("/asset/:assetId", PostgresSessionMiddleware(), deleteAssetHandler)
+    router.PATCH("/texas-real-foods/asset/:assetId", PostgresSessionMiddleware(), updateAssetHandler)
+    router.DELETE("/texas-real-foods/asset/:assetId", PostgresSessionMiddleware(), deleteAssetHandler)
     return router
 }
 
