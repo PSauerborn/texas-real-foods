@@ -30,7 +30,7 @@ type WebConnector struct{
     PhoneValidationAPIHost string
 }
 
-// function used to scrape sites for updated asset data
+// function used to scrape sites for updated asset
 func(connector *WebConnector) Name() string {
     return "web-scraper"
 }

@@ -45,7 +45,7 @@ func(db *Persistence) GetAllAssets() ([]connectors.BusinessInfo, error) {
 
     results := []connectors.BusinessInfo{}
 
-    query := `SELECT asset_metadata.business_id, asset_metadata.business_name,
+    query := `SELECT asset_metadata.business_id, asset_metadata.business_name, asset_metadata.metadata,
         asset_data.uri, asset_data.phone, asset_data.website_live FROM asset_metadata
         INNER JOIN asset_data ON asset_metadata.business_id = asset_data.business_id
     `
@@ -62,10 +62,10 @@ func(db *Persistence) GetAllAssets() ([]connectors.BusinessInfo, error) {
     // iterate over database rows and add to results
     for rows.Next() {
         var (businessName, businessUri string; businessPhones []string)
-        var (businessId uuid.UUID; siteLive bool)
+        var (businessId uuid.UUID; siteLive bool; meta map[string]interface{})
 
         // scan rows into variables
-        if err := rows.Scan(&businessId, &businessName, &businessUri,
+        if err := rows.Scan(&businessId, &businessName, &meta, &businessUri,
             &businessPhones, &siteLive); err != nil {
             log.Error(fmt.Errorf("unable to scan database row: %+v", err))
             continue
@@ -77,6 +77,7 @@ func(db *Persistence) GetAllAssets() ([]connectors.BusinessInfo, error) {
             BusinessPhones: businessPhones,
             BusinessURI: businessUri,
             WebsiteLive: siteLive,
+            Metadata: meta,
         })
     }
     return results, nil
@@ -94,8 +95,8 @@ func(db *Persistence) UpdateAsset(asset connectors.BusinessInfo) error {
         return err
     }
     // update data table with new asset values
-    query = `UPDATE asset_data SET phone=$1 WHERE business_id=$2`
-    _, err = db.Session.Exec(context.Background(), query, asset.BusinessPhones, asset.BusinessId)
+    query = `UPDATE asset_data SET phone=$1, website_live=$2 WHERE business_id=$3`
+    _, err = db.Session.Exec(context.Background(), query, asset.BusinessPhones, asset.WebsiteLive, asset.BusinessId)
     if err != nil {
         return err
     }
