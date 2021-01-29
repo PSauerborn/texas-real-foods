@@ -39,16 +39,11 @@ func(db *Persistence) Connect() (*pgx.Conn, error) {
     return conn, err
 }
 
-// function used to retrieve list of current assets
-func(db *Persistence) GetAllAssets() ([]connectors.BusinessInfo, error) {
-    log.Debug("retrieving list of current assets")
+func(db *Persistence) GetAllMetadata() ([]connectors.BusinessMetadata, error) {
+    log.Debug("retrieving business metadata")
 
-    results := []connectors.BusinessInfo{}
-
-    query := `SELECT asset_metadata.business_id, asset_metadata.business_name, asset_metadata.metadata,
-        asset_data.uri, asset_data.phone, asset_data.website_live FROM asset_metadata
-        INNER JOIN asset_data ON asset_metadata.business_id = asset_data.business_id
-    `
+    results := []connectors.BusinessMetadata{}
+    query := `SELECT business_id,business_name,metadata,uri FROM asset_metadata`
     rows, err := db.Session.Query(context.Background(), query)
     if err != nil {
         switch err {
@@ -59,46 +54,44 @@ func(db *Persistence) GetAllAssets() ([]connectors.BusinessInfo, error) {
         }
     }
 
-    // iterate over database rows and add to results
     for rows.Next() {
-        var (businessName, businessUri string; businessPhones []string)
-        var (businessId uuid.UUID; siteLive bool; meta map[string]interface{})
+        var (businessId uuid.UUID; businessName, businessUri string)
+        var meta map[string]interface{}
 
-        // scan rows into variables
-        if err := rows.Scan(&businessId, &businessName, &meta, &businessUri,
-            &businessPhones, &siteLive); err != nil {
-            log.Error(fmt.Errorf("unable to scan database row: %+v", err))
+        if err := rows.Scan(&businessId, &businessName, &meta,
+            &businessUri); err != nil {
+            log.Warn(fmt.Errorf("unable to scan values into local variables: %+v", err))
             continue
         }
-        // append results
-        results = append(results, connectors.BusinessInfo{
+        results = append(results, connectors.BusinessMetadata{
             BusinessId: businessId,
             BusinessName: businessName,
-            BusinessPhones: businessPhones,
             BusinessURI: businessUri,
-            WebsiteLive: siteLive,
             Metadata: meta,
         })
     }
     return results, nil
 }
 
-func(db *Persistence) UpdateAsset(asset connectors.BusinessInfo) error {
-    log.Debug(fmt.Sprintf("updating asset %+v", asset))
+func(db *Persistence) UpdateBusinessData(update connectors.BusinessUpdate) error {
+    log.Debug(fmt.Sprintf("updating business %+v", update))
 
-    var (query string; err error)
+    var query string
 
-    // update metadata table with update timestamp
+    // execute query to insert new data arguments
+    query = `INSERT INTO asset_data(business_id,phone,website_live,source)
+    VALUES($1,$2,$3,$4)`
+    _, err := db.Session.Exec(context.Background(), query, update.Meta.BusinessId,
+    update.Data.BusinessPhones, update.Data.WebsiteLive, update.Data.Source)
+    if err != nil {
+        return err
+    }
+
+    // update metadata with last update flag
     query = `UPDATE asset_metadata SET last_update=$1 WHERE business_id=$2`
-    _, err = db.Session.Exec(context.Background(), query, time.Now(), asset.BusinessId)
+    _, err = db.Session.Exec(context.Background(), query, time.Now(), update.Meta.BusinessId)
     if err != nil {
         return err
     }
-    // update data table with new asset values
-    query = `UPDATE asset_data SET phone=$1, website_live=$2 WHERE business_id=$3`
-    _, err = db.Session.Exec(context.Background(), query, asset.BusinessPhones, asset.WebsiteLive, asset.BusinessId)
-    if err != nil {
-        return err
-    }
-    return err
+    return nil
 }

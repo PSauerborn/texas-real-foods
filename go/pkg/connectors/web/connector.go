@@ -2,7 +2,6 @@ package connectors
 
 import (
     "fmt"
-    "reflect"
     "errors"
     "net/url"
 
@@ -36,8 +35,9 @@ func(connector *WebConnector) Name() string {
 }
 
 // function used to collect data using webscraper
-func(connector *WebConnector) CollectData(assets []connectors.BusinessInfo) ([]connectors.BusinessInfo, error) {
-    log.Info(fmt.Sprintf("collecting data for %d assets using web connector", len(assets)))
+func(connector *WebConnector) CollectData(businesses []connectors.BusinessMetadata) (
+    []connectors.BusinessUpdate, error) {
+    log.Info(fmt.Sprintf("collecting data for %d businesses using web connector", len(businesses)))
 
     // generate new webscraper and save globally
     scraper = colly.NewCollector()
@@ -46,13 +46,13 @@ func(connector *WebConnector) CollectData(assets []connectors.BusinessInfo) ([]c
     scraper.IgnoreRobotsTxt = false
     scraper.Async = false
 
-    updatedAssets := []connectors.BusinessInfo{}
+    updates := []connectors.BusinessUpdate{}
     // iterate over assets and scrape data
-    for _, asset := range(assets) {
-        log.Debug(fmt.Sprintf("scraping data for asset %+v", asset))
+    for _, business := range(businesses) {
+        log.Debug(fmt.Sprintf("scraping data for asset %+v", business))
 
         // parse url and extract host
-        host, err := url.Parse(asset.BusinessURI)
+        host, err := url.Parse(business.BusinessURI)
         if err != nil {
             log.Error(fmt.Errorf("unable to parse business URI: %+v", err))
             continue
@@ -61,24 +61,21 @@ func(connector *WebConnector) CollectData(assets []connectors.BusinessInfo) ([]c
         scraper.AllowedDomains = []string{host.Host}
 
         // scrape site for updated asset information
-        updated, err := connector.ScrapeSiteData(asset)
+        update, err := connector.ScrapeSiteData(business)
         if err != nil {
-            log.Error(fmt.Sprintf("unable to scrape data for asset %+v: %+v", asset, err))
+            log.Error(fmt.Sprintf("unable to scrape data for business %+v: %+v", business, err))
             continue
         }
-        // add updated asset to list of assets if values differ
-        if !(reflect.DeepEqual(updated, asset)) {
-            log.Debug("asset(s) differ... adding to list of updated")
-            updatedAssets = append(updatedAssets, updated)
-        }
+        updates = append(updates, update)
     }
-    return updatedAssets, nil
+    return updates, nil
 }
 
 // function used to scrape sites for updated asset data
-func(connector *WebConnector) ScrapeSiteData(asset connectors.BusinessInfo) (connectors.BusinessInfo, error) {
+func(connector *WebConnector) ScrapeSiteData(business connectors.BusinessMetadata) (
+    connectors.BusinessUpdate, error) {
 
-    var scrapeError error
+    var (scrapeError error; data connectors.BusinessData)
 
     // add callbacks to scraper and start
     scraper.OnRequest(func(r *colly.Request) {
@@ -91,15 +88,17 @@ func(connector *WebConnector) ScrapeSiteData(asset connectors.BusinessInfo) (con
         if r.StatusCode == 200 {
 
             // parse site and extract data
-            asset, scrapeError = connector.ParseSiteData(asset, r.Body)
+            data, scrapeError = connector.ParseSiteData(business, r.Body)
             if scrapeError != nil {
                 log.Error(fmt.Errorf("unable to scrape site data: %+v", scrapeError))
                 return
             }
-            // asset.BusinessPhones = append(asset.BusinessPhones, updatedAsset.BusinessPhones...)
         } else {
             // update asset to indicate that website is no longer active
-            asset.WebsiteLive = false
+            data = connectors.BusinessData{
+                WebsiteLive: false,
+                Source: connector.Name(),
+            }
         }
     })
     // define error handler
@@ -108,30 +107,28 @@ func(connector *WebConnector) ScrapeSiteData(asset connectors.BusinessInfo) (con
         scrapeError = err
     })
 
-    // scraper.OnHTML("a[href]", func(e *colly.HTMLElement) {
-    //     // Extract the link from the anchor HTML element
-    //     link := e.Attr("href")
-    //     // Tell the collector to visit the link
-    //     scraper.Visit(e.Request.AbsoluteURL(link))
-    // })
-
     // scrape website for data
-    scraper.Visit(asset.BusinessURI)
+    scraper.Visit(business.BusinessURI)
     scraper.Wait()
 
     // handle any error raised during scraping of website
     if scrapeError != nil {
         switch scrapeError {
         default:
-            return asset, scrapeError
+            return connectors.BusinessUpdate{}, scrapeError
         }
     }
-    return asset, nil
+
+    update := connectors.BusinessUpdate{
+        Meta: business,
+        Data: data,
+    }
+    return update, nil
 }
 
 // function used to parse data downloaded from website
-func(connector *WebConnector) ParseSiteData(asset connectors.BusinessInfo,
-    data []byte) (connectors.BusinessInfo, error) {
+func(connector *WebConnector) ParseSiteData(business connectors.BusinessMetadata,
+    data []byte) (connectors.BusinessData, error) {
 
     log.Info(fmt.Sprintf("received and parsing %d bytes of data", len(data)))
     // parse site data for phone numbers by using regex expressions
@@ -139,10 +136,14 @@ func(connector *WebConnector) ParseSiteData(asset connectors.BusinessInfo,
     results, err := utils.ValidatePhoneNumbers(connector.PhoneValidationAPIHost, phones)
     if err != nil {
         log.Error(fmt.Errorf("unable to verify phone numbers with API: %+v", err))
-        return connectors.BusinessInfo{}, err
+        return connectors.BusinessData{}, err
     }
     log.Debug(fmt.Sprintf("Phone API returned response %+v", results))
     // assign valid phone numbers to asset
-    asset.BusinessPhones = results.Valid
-    return asset, nil
+    businessData := connectors.BusinessData{
+        WebsiteLive: true,
+        BusinessPhones: phones,
+        Source: connector.Name(),
+    }
+    return businessData, nil
 }

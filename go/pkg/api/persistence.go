@@ -45,16 +45,9 @@ func(db *Persistence) CreateAsset(request NewAssetRequest) error {
     businessId := uuid.New()
 
     // insert data into metadata table
-    query = `INSERT INTO asset_metadata(business_id,business_name,metadata) VALUES($1,$2,$3)`
+    query = `INSERT INTO asset_metadata(business_id,business_name,metadata,uri) VALUES($1,$2,$3,$4)`
     _, err = db.Session.Exec(context.Background(), query, businessId,
-        request.BusinessName, request.Metadata)
-    if err != nil {
-        return err
-    }
-
-    // insert data into asset data table
-    query = `INSERT INTO asset_data(business_id,uri) VALUES($1,$2)`
-    _, err = db.Session.Exec(context.Background(), query, businessId, request.BusinessURI)
+        request.BusinessName, request.Metadata, request.BusinessURI)
     if err != nil {
         return err
     }
@@ -68,7 +61,7 @@ func(db *Persistence) GetAssets() ([]BusinessInfo, error) {
     results := []BusinessInfo{}
 
     query := `SELECT asset_metadata.business_id, asset_metadata.business_name, asset_metadata.added, asset_metadata.metadata,
-        asset_data.uri, asset_data.phone, asset_data.website_live, asset_metadata.last_update FROM asset_metadata
+        asset_metadata.uri, asset_data.phone, asset_data.website_live, asset_metadata.last_update FROM asset_metadata
         INNER JOIN asset_data ON asset_metadata.business_id = asset_data.business_id
     `
     // retrieve assets from database
@@ -110,7 +103,7 @@ func(db *Persistence) GetAssetById(assetId uuid.UUID) (BusinessInfo, error) {
     log.Debug(fmt.Sprintf("retrieving asset with ID %s", assetId))
 
     query := `SELECT asset_metadata.business_name, asset_metadata.added,
-        asset_data.uri, asset_data.phone, asset_data.website_live, asset_metadata.last_update, asset_metadata.metadata,
+        asset_metadata.uri, asset_data.phone, asset_data.website_live, asset_metadata.last_update, asset_metadata.metadata,
         FROM asset_metadata INNER JOIN asset_data ON asset_metadata.business_id = asset_data.business_id WHERE asset_metadata.asset_id=$1
     `
     var (businessName, businessUri string; added, lastUpdated time.Time)
@@ -143,7 +136,7 @@ func(db *Persistence) GetAssetById(assetId uuid.UUID) (BusinessInfo, error) {
 
 func(db *Persistence) UpdateAssetURI(uri string, assetId uuid.UUID) error {
     log.Debug(fmt.Sprintf("updating asset URI for asset %s", assetId))
-    query := `UPDATE asset_data SET uri=$1 WHERE business_id=$2`
+    query := `UPDATE asset_metadata SET uri=$1 WHERE business_id=$2`
     _, err := db.Session.Exec(context.Background(), query, uri, assetId)
     return err
 }

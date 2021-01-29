@@ -12,7 +12,7 @@ services:
     build:
       context: ./go
       dockerfile: cmd/api/Dockerfile
-    container_name: texas-real-food-api
+    container_name: texas-real-foods-api
     networks:
     - core
     - postgres
@@ -20,17 +20,51 @@ services:
     env_file:
     - go/cmd/api/.env
 
-  updater:
+  authenticator:
     build:
       context: ./go
-      dockerfile: cmd/auto-updater/Dockerfile
-    container_name: texas-real-food-updater
+      dockerfile: cmd/authenticator/Dockerfile
+    container_name: texas-real-foods-authenticator
     networks:
     - core
     - postgres
     - texas-real-foods
     env_file:
-    - go/cmd/auto-updater/.env
+    - go/cmd/authenticator/.env
+
+  router:
+    build:
+      context: ./go
+      dockerfile: cmd/router/Dockerfile
+    container_name: texas-real-foods-router
+    networks:
+    - core
+    - postgres
+    - texas-real-foods
+
+  web-updater:
+    build:
+      context: ./go
+      dockerfile: cmd/auto-updater/scraper/Dockerfile
+    container_name: texas-real-foods-updater-web
+    networks:
+    - core
+    - postgres
+    - texas-real-foods
+    env_file:
+    - go/cmd/auto-updater/scraper/.env
+
+  yelp-updater:
+    build:
+      context: ./go
+      dockerfile: cmd/auto-updater/yelp/Dockerfile
+    container_name: texas-real-foods-updater-yelp
+    networks:
+    - core
+    - postgres
+    - texas-real-foods
+    env_file:
+    - go/cmd/auto-updater/yelp/.env
 
 networks:
   core:

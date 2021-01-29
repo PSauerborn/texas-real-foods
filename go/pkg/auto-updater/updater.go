@@ -36,42 +36,42 @@ type AutoUpdater struct{
 }
 
 // function used to process asset information
-func(updater *AutoUpdater) GetCurrentAssets() ([]connectors.BusinessInfo, error) {
+func(updater *AutoUpdater) GetCurrentBusinesses() ([]connectors.BusinessMetadata, error) {
     // establish new connection to postgres persistence
     db := NewPersistence(updater.PostgresURL)
     conn, err := db.Connect()
     if err != nil {
         log.Error(fmt.Errorf("unable to retrieve assets from postgres: %+v", err))
-        return []connectors.BusinessInfo{}, err
+        return []connectors.BusinessMetadata{}, err
     }
     defer conn.Close(context.Background())
     // get all assets from database and return
-    return db.GetAllAssets()
+    return db.GetAllMetadata()
 }
 
 // function used to process asset information
-func(updater *AutoUpdater) ProcessAssets(assets []connectors.BusinessInfo) error {
+func(updater *AutoUpdater) ProcessBusinessUpdates(updates []connectors.BusinessUpdate) error {
     // establish new connection to postgres persistence
     db := NewPersistence(updater.PostgresURL)
     conn, err := db.Connect()
     if err != nil {
-        log.Error(fmt.Errorf("unable to retrieve assets from postgres: %+v", err))
+        log.Error(fmt.Errorf("unable to connect to postgres server: %+v", err))
         return err
     }
     defer conn.Close(context.Background())
 
     // iterate over assets and update
-    for _, asset := range(assets) {
-        if err := db.UpdateAsset(asset); err != nil {
-            log.Error(fmt.Errorf("unable to update asset '%s': %+v", asset.BusinessName, err))
+    for _, update := range(updates) {
+        if err := db.UpdateBusinessData(update); err != nil {
+            log.Error(fmt.Errorf("unable to update business '%s': %+v", update.Meta.BusinessName, err))
         }
 
         // generate new notification and send via engine
         notification := notifications.ChangeNotification{
-            BusinessId: asset.BusinessId,
-            BusinessName: asset.BusinessName,
+            BusinessId: update.Meta.BusinessId,
+            BusinessName: update.Meta.BusinessName,
             EventTimestamp: time.Now(),
-            Notification: fmt.Sprintf("found new phone numbers %+v", asset.BusinessPhones),
+            Notification: fmt.Sprintf("found new phone numbers %+v", update.Data.BusinessPhones),
         }
         // send update notification and display errors
         err := updater.NotificationEngine.SendNotification(notification)
@@ -84,7 +84,7 @@ func(updater *AutoUpdater) ProcessAssets(assets []connectors.BusinessInfo) error
 
 // function used to start updater. the auto updater
 func(updater *AutoUpdater) Run() {
-    log.Info(fmt.Sprintf("starting new asset auto-updater with collection interval %d", updater.CollectionPeriodMinutes))
+    log.Info(fmt.Sprintf("starting new business auto-updater with collection interval %d", updater.CollectionPeriodMinutes))
     // generate ticker and channel for messages
     ticker := time.NewTicker(time.Duration(updater.CollectionPeriodMinutes) * time.Minute)
     quitChan := make(chan bool)
@@ -98,26 +98,26 @@ func(updater *AutoUpdater) Run() {
             select {
             case <- ticker.C:
                 log.Info("starting new collection job...")
-                // retrieve current list of assets
-                currentAssets, err := updater.GetCurrentAssets()
+                // retrieve current list of businesses
+                currentBusinesses, err := updater.GetCurrentBusinesses()
                 if err != nil {
-                    log.Error(fmt.Errorf("unable to retrieve existing assets: %+v", err))
+                    log.Error(fmt.Errorf("unable to retrieve existing businesses: %+v", err))
                     continue
                 }
 
                 // retrieve updated asset list from connector
-                assets, err := updater.DataConnector.CollectData(currentAssets)
+                updates, err := updater.DataConnector.CollectData(currentBusinesses)
                 if err != nil {
-                    log.Error(fmt.Errorf("unable to retrieve asset data: %+v", err))
+                    log.Error(fmt.Errorf("unable to retrieve business data: %+v", err))
                     continue
                 }
 
-                // process collected assets
-                if len(assets) > 0 {
-                    log.Info(fmt.Sprintf("successfully retrieved %d assets. processing...", len(assets)))
-                    updater.ProcessAssets(assets)
+                // process collected business updates
+                if len(updates) > 0 {
+                    log.Info(fmt.Sprintf("successfully retrieved %d updates. processing...", len(updates)))
+                    updater.ProcessBusinessUpdates(updates)
                 } else {
-                    log.Info("no changes in assets detected. sleeping...")
+                    log.Info("no changes in business data detected. sleeping...")
                 }
 
             case <- quitChan:
