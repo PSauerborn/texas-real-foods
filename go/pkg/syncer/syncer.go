@@ -133,6 +133,7 @@ func(syncer *Syncer) SendNotification(message, hashed string,
         BusinessName: business.BusinessName,
         EventTimestamp: time.Now(),
         JSONHash: hashed,
+        Notification: message,
     }
     return syncer.Notifications.SendNotification(payload)
 }
