@@ -1,12 +1,11 @@
-package auto_updater
+package syncer
 
 import (
     "fmt"
-    "time"
     "context"
 
-    "github.com/jackc/pgx/v4"
     "github.com/google/uuid"
+    "github.com/jackc/pgx/v4"
     log "github.com/sirupsen/logrus"
 
     "texas_real_foods/pkg/connectors"
@@ -75,27 +74,43 @@ func(db *Persistence) GetAllMetadata() ([]connectors.BusinessMetadata, error) {
     return results, nil
 }
 
-// function to update business data in the database. note that
-// updates are done as inserts i.e. existing values are overwritten
-func(db *Persistence) UpdateBusinessData(update connectors.BusinessUpdate) error {
-    log.Debug(fmt.Sprintf("updating business %+v", update))
+// function used to retrieve data for a given business with business ID
+func(db *Persistence) GetDataByBusinessId(businessId uuid.UUID) (
+    []connectors.BusinessUpdate, error) {
+    log.Debug(fmt.Sprintf("retrieving data for business '%s'", businessId))
 
-    var query string
+    data := []connectors.BusinessUpdate{}
+    query := `SELECT source,website_live,phone FROM asset_data
+    WHERE business_id=$1`
 
-    // execute query to insert new data arguments
-    query = `INSERT INTO asset_data(business_id,phone,website_live,source)
-    VALUES($1,$2,$3,$4)`
-    _, err := db.Session.Exec(context.Background(), query, update.Meta.BusinessId,
-    update.Data.BusinessPhones, update.Data.WebsiteLive, update.Data.Source)
+    rows, err := db.Session.Query(context.Background(), query, businessId)
     if err != nil {
-        return err
+        switch err {
+        case pgx.ErrNoRows:
+            return data, nil
+        default:
+            return data, err
+        }
     }
 
-    // update metadata with last update flag
-    query = `UPDATE asset_metadata SET last_update=$1 WHERE business_id=$2`
-    _, err = db.Session.Exec(context.Background(), query, time.Now(), update.Meta.BusinessId)
-    if err != nil {
-        return err
+    for rows.Next() {
+        // read variables into local scope
+        var (source string; websiteLive bool; phones []string;)
+        if err := rows.Scan(&source, &websiteLive, &phones); err != nil {
+            log.Warn(fmt.Errorf("unable to read data into local variables: %+v", err))
+            continue
+        }
+        // append new entry to results slice
+        data = append(data, connectors.BusinessUpdate{
+            Meta: connectors.BusinessMetadata{
+                BusinessId: businessId,
+            },
+            Data: connectors.BusinessData{
+                BusinessPhones: phones,
+                WebsiteLive: websiteLive,
+                Source: source,
+            },
+        })
     }
-    return nil
+    return data, nil
 }

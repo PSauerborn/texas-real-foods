@@ -66,6 +66,18 @@ services:
     env_file:
     - go/cmd/auto-updater/yelp/.env
 
+  syncer:
+    build:
+      context: ./go
+      dockerfile: cmd/syncer/Dockerfile
+    container_name: texas-real-foods-syncer
+    networks:
+    - core
+    - postgres
+    - texas-real-foods
+    env_file:
+    - go/cmd/syncer/.env
+
 networks:
   core:
     name: core

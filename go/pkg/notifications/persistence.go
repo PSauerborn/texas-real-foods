@@ -45,8 +45,8 @@ func(db *Persistence) CreateNotification(payload ChangeNotification) error {
     payloadJson, _ := json.Marshal(payload)
     notificationId := uuid.New()
 
-    query := `INSERT INTO notifications(notification_id,notification) VALUES($1,$2)`
-    _, err := db.Session.Exec(context.Background(), query, notificationId, payloadJson)
+    query := `INSERT INTO notifications(notification_id,notification,hash) VALUES($1,$2,$3)`
+    _, err := db.Session.Exec(context.Background(), query, notificationId, payloadJson, payload.JSONHash)
     return err
 }
 
@@ -82,4 +82,22 @@ func(db *Persistence) GetNotifications() ([]ChangeNotification, error) {
         notifications = append(notifications, notification)
     }
     return notifications, nil
+}
+
+func(db *Persistence) NotificationHashExists(hashed string) (bool, error) {
+    log.Debug(fmt.Sprintf("checking notifications for hash %s", hashed))
+
+    query := `SELECT notification_id FROM notifications WHERE hash=$1`
+    row := db.Session.QueryRow(context.Background(), query, hashed)
+
+    var notificationId uuid.UUID
+    if err := row.Scan(&notificationId); err != nil {
+        switch err {
+        case pgx.ErrNoRows:
+            return false, nil
+        default:
+            return true, err
+        }
+    }
+    return true, nil
 }

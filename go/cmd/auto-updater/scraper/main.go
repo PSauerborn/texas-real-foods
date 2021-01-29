@@ -7,7 +7,6 @@ import (
     log "github.com/sirupsen/logrus"
 
     "texas_real_foods/pkg/connectors/web"
-    "texas_real_foods/pkg/notifications"
     "texas_real_foods/pkg/utils"
     updater "texas_real_foods/pkg/auto-updater"
 )
@@ -27,9 +26,7 @@ func main() {
     log.SetLevel(log.DebugLevel)
 
     // generate new web connector and instance of notification engine
-    // connector := connectors.NewWebConnector(environConfig.Get("phone_validation_api_host"))
     connector := connectors.NewWebConnector(cfg.Get("phone_validation_api_host"))
-    notify := notifications.NewDefaultNotificationEngine(cfg.Get("postgres_url"))
 
     intervalString := cfg.Get("collection_interval_minutes")
     // convert given interval from string to integer
@@ -38,5 +35,5 @@ func main() {
         panic(fmt.Sprintf("received invalid collection interval '%s'", intervalString))
     }
     // create new updater with data connector and run
-    updater.New(connector, interval, notify, cfg.Get("postgres_url")).Run()
+    updater.New(connector, interval, cfg.Get("postgres_url")).Run()
 }

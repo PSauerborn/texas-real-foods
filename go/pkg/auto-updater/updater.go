@@ -9,47 +9,50 @@ import (
     log "github.com/sirupsen/logrus"
 
     "texas_real_foods/pkg/connectors"
-    "texas_real_foods/pkg/notifications"
 )
 
 var (
 
 )
 
-// function used to create new auto updater
+// function used to create new auto updater. the auto-updater
+// takes a variety of components to operate. particularly
+// important is the instance of a AutoUpdateDataConnector
+// interface implementation, which is used to collect data from
+// a particular data source (yelp, google, website etc)
 func New(connector connectors.AutoUpdateDataConnector, collectionPeriod int,
-    notificationEngine notifications.NotificationEngine,
     postgresUrl string) *AutoUpdater {
     return &AutoUpdater{
         PostgresURL: postgresUrl,
         DataConnector: connector,
         CollectionPeriodMinutes: collectionPeriod,
-        NotificationEngine: notificationEngine,
     }
 }
 
+// struct to store components for auto updater. note that each
+// instance has a separate data connector and notification engine
 type AutoUpdater struct{
     PostgresURL             string
     CollectionPeriodMinutes int
     DataConnector           connectors.AutoUpdateDataConnector
-    NotificationEngine      notifications.NotificationEngine
 }
 
-// function used to process asset information
+// function used to retrieve business metadata for all stored
+// businesses
 func(updater *AutoUpdater) GetCurrentBusinesses() ([]connectors.BusinessMetadata, error) {
     // establish new connection to postgres persistence
     db := NewPersistence(updater.PostgresURL)
     conn, err := db.Connect()
     if err != nil {
-        log.Error(fmt.Errorf("unable to retrieve assets from postgres: %+v", err))
+        log.Error(fmt.Errorf("unable to connect to postgres: %+v", err))
         return []connectors.BusinessMetadata{}, err
     }
     defer conn.Close(context.Background())
-    // get all assets from database and return
+    // get all businesses from database and return
     return db.GetAllMetadata()
 }
 
-// function used to process asset information
+// function used to process business data updates
 func(updater *AutoUpdater) ProcessBusinessUpdates(updates []connectors.BusinessUpdate) error {
     // establish new connection to postgres persistence
     db := NewPersistence(updater.PostgresURL)
@@ -60,23 +63,11 @@ func(updater *AutoUpdater) ProcessBusinessUpdates(updates []connectors.BusinessU
     }
     defer conn.Close(context.Background())
 
-    // iterate over assets and update
+    // iterate over businesses and update in database
     for _, update := range(updates) {
         if err := db.UpdateBusinessData(update); err != nil {
-            log.Error(fmt.Errorf("unable to update business '%s': %+v", update.Meta.BusinessName, err))
-        }
-
-        // generate new notification and send via engine
-        notification := notifications.ChangeNotification{
-            BusinessId: update.Meta.BusinessId,
-            BusinessName: update.Meta.BusinessName,
-            EventTimestamp: time.Now(),
-            Notification: fmt.Sprintf("found new phone numbers %+v", update.Data.BusinessPhones),
-        }
-        // send update notification and display errors
-        err := updater.NotificationEngine.SendNotification(notification)
-        if err != nil {
-            log.Warn(fmt.Errorf("unable to send update notification: %+v", err))
+            log.Warn(fmt.Errorf("unable to update business '%s': %+v",
+            update.Meta.BusinessName, err))
         }
     }
     return nil
@@ -84,7 +75,8 @@ func(updater *AutoUpdater) ProcessBusinessUpdates(updates []connectors.BusinessU
 
 // function used to start updater. the auto updater
 func(updater *AutoUpdater) Run() {
-    log.Info(fmt.Sprintf("starting new business auto-updater with collection interval %d", updater.CollectionPeriodMinutes))
+    log.Info(fmt.Sprintf("starting new business auto-updater with collection interval %d",
+    updater.CollectionPeriodMinutes))
     // generate ticker and channel for messages
     ticker := time.NewTicker(time.Duration(updater.CollectionPeriodMinutes) * time.Minute)
     quitChan := make(chan bool)

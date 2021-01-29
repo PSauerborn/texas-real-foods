@@ -22,7 +22,7 @@ var (
     ErrRequestLimitReached = errors.New("Reached request limit on API")
 )
 
-// function used to parse yelp response
+// function used to parse HTTP response body from yelp API
 func ParseYelpResponse(content io.ReadCloser) (YelpBusinessResults, error) {
     var response YelpBusinessResponse
     if err := json.NewDecoder(content).Decode(&response); err != nil {
@@ -38,6 +38,9 @@ func ParseYelpResponse(content io.ReadCloser) (YelpBusinessResults, error) {
     return data, nil
 }
 
+// function used to request business data from Yelp API. note that
+// a valid business ID and API key are both needed in order to make
+// a successfully request
 func GetYelpBusinessInfo(businessId, apiKey string) (YelpBusinessResults, error) {
     log.Debug(fmt.Sprintf("requesting Yelp! data for business %s", businessId))
     // createnew HTTP instance and set request headers

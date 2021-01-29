@@ -20,11 +20,15 @@ var (
     ErrInvalidURI = errors.New("Invalid URI")
 )
 
-
+// define function used to generate new web connector. note
+// that each instance of the WebConnector is created with a
+// Phone Validation API host, which is used to validate phone
+// numbers scraped from a site(s)
 func NewWebConnector(phoneApiHost string) *WebConnector {
     return &WebConnector{phoneApiHost}
 }
 
+// struct used to store
 type WebConnector struct{
     PhoneValidationAPIHost string
 }
@@ -47,9 +51,9 @@ func(connector *WebConnector) CollectData(businesses []connectors.BusinessMetada
     scraper.Async = false
 
     updates := []connectors.BusinessUpdate{}
-    // iterate over assets and scrape data
+    // iterate over businesses and scrape data
     for _, business := range(businesses) {
-        log.Debug(fmt.Sprintf("scraping data for asset %+v", business))
+        log.Debug(fmt.Sprintf("scraping data for business %+v", business))
 
         // parse url and extract host
         host, err := url.Parse(business.BusinessURI)
@@ -60,7 +64,7 @@ func(connector *WebConnector) CollectData(businesses []connectors.BusinessMetada
         // configure scraper to only have access to host domain
         scraper.AllowedDomains = []string{host.Host}
 
-        // scrape site for updated asset information
+        // scrape site for updated business information
         update, err := connector.ScrapeSiteData(business)
         if err != nil {
             log.Error(fmt.Sprintf("unable to scrape data for business %+v: %+v", business, err))
@@ -71,7 +75,7 @@ func(connector *WebConnector) CollectData(businesses []connectors.BusinessMetada
     return updates, nil
 }
 
-// function used to scrape sites for updated asset data
+// function used to scrape sites for updated business data
 func(connector *WebConnector) ScrapeSiteData(business connectors.BusinessMetadata) (
     connectors.BusinessUpdate, error) {
 
