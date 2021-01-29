@@ -72,7 +72,7 @@ func(syncer *Syncer) SyncData() error {
             hashed, err := HashMap(mapValues)
             if err != nil {
                 log.Error(fmt.Errorf("unable to generate hash from business update(s): %+v", err))
-                return err
+                continue
             }
 
             log.Debug(fmt.Sprintf("successfully hashed business update(s) into '%s'", hashed))
@@ -88,7 +88,7 @@ func(syncer *Syncer) SyncData() error {
             // send notification
             if err := syncer.SendNotification(message, hashed, business); err != nil {
                 log.Error(fmt.Errorf("unable to send change notification: %+v", err))
-                return err
+                continue
             }
         } else {
             log.Info(fmt.Sprintf("data entries for '%s' in sync", business.BusinessName))
