@@ -20,7 +20,7 @@ var (
             "postgres_url": "postgres://postgres:postgres-dev@192.168.99.100:5432",
             "collection_interval_minutes": "1",
             "yelp_base_api": "https://api.yelp.com/v3/businesses",
-            "yelp_api_key": "FEGYd3kdCaBOPh3mOd1GSEqo0kn_-bNi6oM6azCv7LjGhjO7nY-jmCc3ENagPAujhteAOWqoP4g8AOnlVOA9jXENSTBY4P92gZ_2fFDatC6v66TYGMr8BToQoBMPYHYx",
+            "yelp_api_key": "",
         },
     )
 )
