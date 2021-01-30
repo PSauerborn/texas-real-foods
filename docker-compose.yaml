@@ -1,9 +1,9 @@
 version: '3.7'
 services:
 
-  validation-api:
+  utils-api:
     build: ./python
-    container_name: phone-validation-api
+    container_name: texas-real-foods-utils-api
     networks:
     - core
     - texas-real-foods
