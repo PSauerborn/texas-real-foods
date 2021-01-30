@@ -54,3 +54,7 @@ logging.basicConfig(level=LOG_LEVEL)
 
 LISTEN_PORT = override_value('LISTEN_PORT', 10847)
 LISTEN_ADDRESS = override_value('LISTEN_ADDRESS', '0.0.0.0')
+
+COUNTIES_FILE_PATH = override_value('COUNTIES_FILE_PATH', './data/counties.json')
+with open(COUNTIES_FILE_PATH, 'r') as f:
+    COUNTY_MAPPINGS = json.load(f)

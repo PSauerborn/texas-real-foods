@@ -2,3 +2,4 @@ phonenumbers
 bottle
 pydantic
 waitress
+zipcode
