@@ -37,9 +37,9 @@ func(db *Persistence) Connect() (*pgx.Conn, error) {
     return conn, err
 }
 
-// function to insert new asset into database
-func(db *Persistence) CreateAsset(request NewAssetRequest) error {
-    log.Debug(fmt.Sprintf("creating new asset %+v", request))
+// function to insert new business into database
+func(db *Persistence) CreateBusiness(request NewBusinessRequest) error {
+    log.Debug(fmt.Sprintf("creating new businesses %+v", request))
 
     var (query string; err error)
     businessId := uuid.New()
@@ -55,20 +55,21 @@ func(db *Persistence) CreateAsset(request NewAssetRequest) error {
     return nil
 }
 
-// function used to retrieve assets from the database
-func(db *Persistence) GetAssets() ([]BusinessInfo, error) {
-    log.Debug("retrieving assets")
+// function used to retrieve businesses from the database
+func(db *Persistence) GetBusinesses() ([]BusinessInfo, error) {
+    log.Debug("retrieving businesses")
     results := []BusinessInfo{}
 
-    query := `SELECT asset_metadata.business_id, asset_metadata.business_name, asset_metadata.added, asset_metadata.metadata,
-        asset_metadata.uri, asset_data.phone, asset_data.website_live, asset_metadata.last_update FROM asset_metadata
-        INNER JOIN asset_data ON asset_metadata.business_id = asset_data.business_id
-    `
-    // retrieve assets from database
+    query := `SELECT asset_metadata.business_id, asset_metadata.business_name,
+    asset_metadata.added, asset_metadata.metadata, asset_metadata.uri,
+    asset_metadata.last_update FROM asset_metadata`
+
+    // retrieve businesses from database
     rows, err := db.Session.Query(context.Background(), query)
     if err != nil {
         switch err {
         case pgx.ErrNoRows:
+            log.Warn("no businesses found in database. returning empty array")
             return results, nil
         default:
             return results, err
@@ -76,11 +77,11 @@ func(db *Persistence) GetAssets() ([]BusinessInfo, error) {
     }
 
     for rows.Next() {
-        var (businessName, businessUri string; businessPhones []string; websiteLive bool)
+        var businessName, businessUri string
         var (businessId uuid.UUID; added, lastUpdate time.Time; meta map[string]interface{})
         // handle errors from scanning values into variables
         if err := rows.Scan(&businessId, &businessName, &added, &meta,
-            &businessUri, &businessPhones, &websiteLive, &lastUpdate); err != nil {
+            &businessUri, &lastUpdate); err != nil {
             log.Error(fmt.Errorf("unable to scan database row: %+v", err))
             continue
         }
@@ -89,8 +90,6 @@ func(db *Persistence) GetAssets() ([]BusinessInfo, error) {
             BusinessId: businessId,
             BusinessName: businessName,
             BusinessURI: businessUri,
-            BusinessPhones: businessPhones,
-            WebsiteLive: websiteLive,
             Added: added,
             LastUpdate: lastUpdate,
             Metadata: meta,
@@ -99,23 +98,22 @@ func(db *Persistence) GetAssets() ([]BusinessInfo, error) {
     return results, nil
 }
 
-func(db *Persistence) GetAssetById(assetId uuid.UUID) (BusinessInfo, error) {
-    log.Debug(fmt.Sprintf("retrieving asset with ID %s", assetId))
+func(db *Persistence) GetBusinessById(businessId uuid.UUID) (BusinessInfo, error) {
+    log.Debug(fmt.Sprintf("retrieving businesses with ID %s", businessId))
 
     query := `SELECT asset_metadata.business_name, asset_metadata.added,
-        asset_metadata.uri, asset_data.phone, asset_data.website_live, asset_metadata.last_update, asset_metadata.metadata,
-        FROM asset_metadata INNER JOIN asset_data ON asset_metadata.business_id = asset_data.business_id WHERE asset_metadata.asset_id=$1
-    `
+        asset_metadata.uri, asset_metadata.last_update, asset_metadata.metadata
+        FROM asset_metadata WHERE business_id=$1`
+
     var (businessName, businessUri string; added, lastUpdated time.Time)
-    var (businessPhones []string; websiteLive bool; meta map[string]interface{})
-    // retrieve asset from database
-    err := db.Session.QueryRow(context.Background(), query, assetId.String()).Scan(
-        &businessName, &added, &businessUri, &businessPhones, &websiteLive,
-        &lastUpdated, &meta)
+    var meta map[string]interface{}
+    // retrieve business from database
+    err := db.Session.QueryRow(context.Background(), query, businessId.String()).Scan(
+        &businessName, &added, &businessUri, &lastUpdated, &meta)
     if err != nil {
         switch err {
         case pgx.ErrNoRows:
-            return BusinessInfo{}, ErrAssetNotFound
+            return BusinessInfo{}, ErrBusinessNotFound
         default:
             return BusinessInfo{}, err
         }
@@ -123,10 +121,8 @@ func(db *Persistence) GetAssetById(assetId uuid.UUID) (BusinessInfo, error) {
 
     info := BusinessInfo{
         BusinessName: businessName,
-        BusinessId: assetId,
+        BusinessId: businessId,
         BusinessURI: businessUri,
-        WebsiteLive: websiteLive,
-        BusinessPhones: businessPhones,
         LastUpdate: lastUpdated,
         Added: added,
         Metadata: meta,
@@ -134,17 +130,74 @@ func(db *Persistence) GetAssetById(assetId uuid.UUID) (BusinessInfo, error) {
     return  info, nil
 }
 
-func(db *Persistence) UpdateAssetURI(uri string, assetId uuid.UUID) error {
-    log.Debug(fmt.Sprintf("updating asset URI for asset %s", assetId))
+func(db *Persistence) UpdateBusinessURI(uri string, businessId uuid.UUID) error {
+    log.Debug(fmt.Sprintf("updating business URI for business %s", businessId))
     query := `UPDATE asset_metadata SET uri=$1 WHERE business_id=$2`
-    _, err := db.Session.Exec(context.Background(), query, uri, assetId)
+    _, err := db.Session.Exec(context.Background(), query, uri, businessId)
     return err
 }
 
-func(db *Persistence) UpdateAssetMetadata(meta map[string]interface{}, assetId uuid.UUID) error {
-    log.Debug(fmt.Sprintf("updating asset URI for asset %s", assetId))
+func(db *Persistence) UpdateBusinessMetadata(meta map[string]interface{}, businessId uuid.UUID) error {
+    log.Debug(fmt.Sprintf("updating business URI for business %s", businessId))
     query := `UPDATE asset_metadata SET metadata=$1 WHERE business_id=$2`
     // update database with new metadata information
-    _, err := db.Session.Exec(context.Background(), query, meta, assetId)
+    _, err := db.Session.Exec(context.Background(), query, meta, businessId)
     return err
+}
+
+func(db *Persistence) DeleteBusiness(businessId uuid.UUID) error {
+    log.Debug(fmt.Sprintf("deleting business %s", businessId))
+
+    var (err error; query string)
+
+    query = `DELETE FROM asset_metadata WHERE business_id=$1`
+    _, err = db.Session.Exec(context.Background(), query, businessId)
+    if err != nil {
+        return err
+    }
+
+    query = `DELETE FROM asset_data WHERE business_id=$1`
+    _, err = db.Session.Exec(context.Background(), query, businessId)
+    if err != nil {
+        return err
+    }
+    return nil
+}
+
+func(db *Persistence) GetNotifications() ([]Notification, error) {
+    log.Debug("retrieving notifications from database")
+
+    notifications := []Notification{}
+
+    query := `SELECT notification_id, event_timestamp, notification, hash
+    FROM notifications`
+
+    rows, err := db.Session.Query(context.Background(), query)
+    if err != nil {
+        switch err {
+        case pgx.ErrNoRows:
+            return notifications, nil
+        default:
+            return notifications, err
+        }
+    }
+
+    for rows.Next() {
+        var (notificationId uuid.UUID; eventTimestamp time.Time)
+        var (notification map[string]interface{}; hashed string)
+
+        if err := rows.Scan(&notificationId, &eventTimestamp,
+            &notification, &hashed); err != nil {
+            log.Warn(fmt.Errorf("unable to scan row into local variables: %+v", err))
+            continue
+        }
+
+        notifications = append(notifications, Notification{
+            NotificationId: notificationId,
+            EventTimestamp: eventTimestamp,
+            Notification: notification,
+            Hash: hashed,
+        })
+    }
+    return notifications, nil
 }
