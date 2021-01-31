@@ -84,7 +84,8 @@ func(db *Persistence) UpdateBusinessData(update connectors.BusinessUpdate) error
 
     // execute query to insert new data arguments
     query = `INSERT INTO asset_data(business_id,phone,website_live,source)
-    VALUES($1,$2,$3,$4)`
+    VALUES($1,$2,$3,$4) ON CONFLICT (business_id,source) DO UPDATE
+    SET phone=$2, website_live=$3`
     _, err := db.Session.Exec(context.Background(), query, update.Meta.BusinessId,
     update.Data.BusinessPhones, update.Data.WebsiteLive, update.Data.Source)
     if err != nil {
