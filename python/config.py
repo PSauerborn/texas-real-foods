@@ -49,7 +49,7 @@ LOG_LEVELS = {
     'CRITICAL': logging.CRITICAL
 }
 
-LOG_LEVEL = LOG_LEVELS.get(override_value('log_level', 'DEBUG'), logging.DEBUG)
+LOG_LEVEL = LOG_LEVELS.get(override_value('log_level', 'INFO'), logging.DEBUG)
 logging.basicConfig(level=LOG_LEVEL)
 
 LISTEN_PORT = override_value('LISTEN_PORT', 10847)

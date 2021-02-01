@@ -71,7 +71,7 @@ def zipcode(code: str):
         # extract county and retrieve council mapping if exists
         economic_region = get_economic_region(data.get('county', ''))
         if economic_region is not None:
-            data['economic_region'] = economic_region
+            data['economic_region'] = economic_region.title()
         return {'http_code': 200, 'data': data}
 
     except (ValueError, TypeError):
