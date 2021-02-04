@@ -7,17 +7,17 @@ import (
 )
 
 type NewBusinessRequest struct{
-    BusinessName string                 `json:"business_name" validate:"required"`
-    BusinessURI  string                 `json:"business_uri"  validate:"required"`
+    BusinessName string                 `json:"business_name" binding:"required"`
+    BusinessURI  string                 `json:"business_uri"  binding:"required"`
     Metadata     map[string]interface{} `json:"metadata"`
 }
 
 type BusinessUpdateRequest struct{
-    BusinessURI string `json:"business_uri" validate:"required"`
+    BusinessURI string `json:"business_uri" binding:"required"`
 }
 
 type BusinessMetaPatchRequest struct{
-    Operation []map[string]interface{} `json:"operation" validate:"required"`
+    Operation []map[string]interface{} `json:"operation" binding:"required"`
 }
 
 type BusinessInfo struct{
