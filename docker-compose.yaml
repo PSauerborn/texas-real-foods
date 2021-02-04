@@ -78,6 +78,18 @@ services:
     env_file:
     - go/cmd/syncer/.env
 
+  mail-relay:
+    build:
+      context: ./go
+      dockerfile: cmd/mail-relay/Dockerfile
+    container_name: texas-real-foods-mail-relay
+    networks:
+    - core
+    - postgres
+    - texas-real-foods
+    env_file:
+    - go/cmd/mail-relay/.env
+
 networks:
   core:
     name: core
