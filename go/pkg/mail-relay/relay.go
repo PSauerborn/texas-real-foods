@@ -106,18 +106,18 @@ func(relay *MailRelay) ProcessEvents() {
 
 func(relay *MailRelay) TriggerMailChimp(request MailRelayRequest, data ZipCodeData) error {
     // function used to relay sign up request to mail chimp server
-	log.Info(fmt.Sprintf("relaying request %+v", request))
-	return nil
+    log.Info(fmt.Sprintf("relaying request %+v", request))
+    return nil
 }
 
 func(relay *MailRelay) GetZipCodeData(zipcode string) (ZipCodeDataResponse, error) {
-	log.Info(fmt.Sprintf("requesting zip code data for code '%s'", zipcode))
+    log.Info(fmt.Sprintf("requesting zip code data for code '%s'", zipcode))
 
-	// createnew HTTP instance and set request headers
+    // createnew HTTP instance and set request headers
     req, err := http.NewRequest("GET", fmt.Sprintf("%s/zipcode/%s", relay.ZipDataAPIUrl, zipcode), nil)
     req.Header.Set("Content-Type", "application/json")
 
-	// generate new HTTP client and execute request
+    // generate new HTTP client and execute request
     client := &http.Client{}
     resp, err := client.Do(req)
     if err != nil {

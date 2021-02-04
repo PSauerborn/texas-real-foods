@@ -1,11 +1,11 @@
 package mail_relay
 
 import (
-	"fmt"
-	"net/http"
+    "fmt"
+    "net/http"
 
-	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
+    "github.com/gin-gonic/gin"
+    log "github.com/sirupsen/logrus"
 )
 
 // function used to serve health check response and route
