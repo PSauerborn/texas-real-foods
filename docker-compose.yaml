@@ -98,7 +98,7 @@ services:
     - core
     - texas-real-foods
     environment:
-      BASE_URL: /api/documentation
+      BASE_URL: /api/docs
 
 networks:
   core:
