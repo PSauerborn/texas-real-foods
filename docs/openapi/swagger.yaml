@@ -237,6 +237,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/ValidatedPhoneNumbersResponse'
 
+        400:
+          description: JSON response containing invalid request message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidRequestResponse'
+
         401:
           description: JSON response containing unauthorized message
           content:
@@ -400,6 +407,231 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalServerErrorResponse'
 
+  /texas-real-foods/notifications:
+    get:
+      summary: API route used to retrieve list of notifications
+      tags:
+      - Business API
+      security:
+      - ApiKeyAuth: []
+      parameters:
+        - in: header
+          name: X-ApiKey
+          schema:
+            type: string
+          description: API Access Key
+          required: true
+      responses:
+        200:
+          description: JSON response containing notifications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListNotificationsResponse'
+
+        401:
+          description: JSON response containing unauthorized message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+
+        403:
+          description: JSON response containing forbidden message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponse'
+
+        500:
+          description: JSON response containing internal server error message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponse'
+
+  /texas-real-foods/business:
+    post:
+      summary: API route used to register new business for analysis
+      tags:
+      - Business API
+      security:
+      - ApiKeyAuth: []
+      parameters:
+        - in: header
+          name: X-ApiKey
+          schema:
+            type: string
+          description: API Access Key
+          required: true
+      requestBody:
+        description: Raw JSON body containing business details
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewBusinessRequest'
+      responses:
+        200:
+          description: JSON response containing success message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessCreatedResponse'
+
+        400:
+          description: JSON response containing invalid request message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidRequestResponse'
+
+        401:
+          description: JSON response containing unauthorized message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+
+        403:
+          description: JSON response containing forbidden message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponse'
+
+        500:
+          description: JSON response containing internal server error message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponse'
+
+  /texas-real-foods/business/info/{businessId}:
+    post:
+      summary: API route used to update business info
+      tags:
+      - Business API
+      security:
+      - ApiKeyAuth: []
+      parameters:
+        - in: header
+          name: X-ApiKey
+          schema:
+            type: string
+          description: API Access Key
+          required: true
+        - in: path
+          name: businessId
+          schema:
+            type: string
+          description: ID of business
+          required: true
+      requestBody:
+        description: Raw JSON body containing business details
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessInfoPatchRequest'
+      responses:
+        200:
+          description: JSON response containing success message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessPatchedResponse'
+
+        400:
+          description: JSON response containing invalid request message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidRequestResponse'
+
+        401:
+          description: JSON response containing unauthorized message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+
+        403:
+          description: JSON response containing forbidden message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponse'
+
+        500:
+          description: JSON response containing internal server error message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponse'
+
+  /texas-real-foods/business/meta/{businessId}:
+    post:
+      summary: API route used to update business metadata
+      tags:
+      - Business API
+      security:
+      - ApiKeyAuth: []
+      parameters:
+        - in: header
+          name: X-ApiKey
+          schema:
+            type: string
+          description: API Access Key
+          required: true
+        - in: path
+          name: businessId
+          schema:
+            type: string
+          description: ID of business
+          required: true
+      requestBody:
+        description: Raw JSON body containing business details
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessMetaPatchRequest'
+      responses:
+        200:
+          description: JSON response containing success message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessPatchedResponse'
+
+        400:
+          description: JSON response containing invalid request message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidRequestResponse'
+
+        401:
+          description: JSON response containing unauthorized message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+
+        403:
+          description: JSON response containing forbidden message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponse'
+
+        500:
+          description: JSON response containing internal server error message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponse'
 
 components:
   securitySchemes:
@@ -661,3 +893,99 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/BusinessEntry'
+
+    Notification:
+      properties:
+        notification_id:
+          type: string
+          example: 655357ab-e7a8-406d-87bb-0736f6538339
+        event_timestamp:
+          type: string
+          example: 2021-02-04T12:35:29.127003Z
+        hash:
+          type: string
+          example: aff821945c66cb748592ede3ec2aac90ddfdea72d1f67ab0d983e05fc2b7a58b
+        notification:
+          type: object
+          properties:
+            business_name:
+              type: string
+              example: example-business
+            business_id:
+              type: string
+              example: 655357ab-e7a8-406d-87bb-0736f6538339
+            notification:
+              type: string
+              example: example notification message. somethings changed
+            event_timestamp:
+              type: string
+              example: 2021-02-04T12:35:29.127003Z
+
+    ListNotificationsResponse:
+      properties:
+        success:
+          type: boolean
+          example: true
+        http_code:
+          type: integer
+          example: 200
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+
+    NewBusinessRequest:
+      properties:
+        business_name:
+          type: string
+          example: example-business
+        business_uri:
+          type: string
+          example: https://example-business.com
+        metadata:
+          type: object
+          properties:
+            yelp_business_id:
+              type: string
+              example: example-business-6
+
+    BusinessCreatedResponse:
+      properties:
+        http_code:
+          type: integer
+          example: 201
+        message:
+          type: string
+          example: Successfully created business
+
+    BusinessMetaPatchRequest:
+      properties:
+        operation:
+          type: array
+          items:
+            type: object
+            properties:
+              op:
+                type: string
+                example: add
+              value:
+                type: string
+                example: example-business-6
+              path:
+                type: string
+                example: /yelp_business_id
+
+    BusinessInfoPatchRequest:
+      properties:
+        business_uri:
+          type: string
+          example: https://example-business-updated.com
+
+    BusinessPatchedResponse:
+      properties:
+        http_code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: Successfully updated business

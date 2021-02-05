@@ -1,0 +1,1467 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Texas Real Foods API",
+    "description": "API used to manage the Texas Real Foods Backend",
+    "version": "0.0.1"
+  },
+  "servers": [
+    {
+      "url": "https://trf.project-gateway.app/api",
+      "description": "Production API Service"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Mail Relay",
+      "description": "Micro-service used to expose Mail Chimp API Routes"
+    },
+    {
+      "name": "Utils API",
+      "description": "Micro-service used to expose utilities API"
+    },
+    {
+      "name": "Business API",
+      "description": "Micro-service used to manage Texas Real Foods businesses"
+    }
+  ],
+  "paths": {
+    "/relay/health": {
+      "get": {
+        "summary": "API route used to perform health check on server",
+        "tags": [
+          "Mail Relay"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-ApiKey",
+            "schema": {
+              "type": "string"
+            },
+            "description": "API Access Key",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response containing health check status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthCheckResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JSON response containing unauthorized message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "JSON response containing forbidden message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "JSON response containing internal server error message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/relay/history": {
+      "get": {
+        "summary": "API route used to retrieve mail relay history",
+        "tags": [
+          "Mail Relay"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-ApiKey",
+            "schema": {
+              "type": "string"
+            },
+            "description": "API Access Key",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response containing mail relay entries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailRelayEntriesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JSON response containing unauthorized message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "JSON response containing forbidden message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "JSON response containing internal server error message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/relay/mail-chimp": {
+      "post": {
+        "summary": "API route used to trigger new Mail Chimp email",
+        "tags": [
+          "Mail Relay"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-ApiKey",
+            "schema": {
+              "type": "string"
+            },
+            "description": "API Access Key",
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "description": "Raw JSON body containing sign up details",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MailChimpSignUpRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "JSON response containing success message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailChimpTriggerSuccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON response containing invalid request message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequestResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JSON response containing unauthorized message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "JSON response containing forbidden message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "JSON response containing internal server error message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utils/health": {
+      "get": {
+        "summary": "API route used to perform health check on server",
+        "tags": [
+          "Utils API"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-ApiKey",
+            "schema": {
+              "type": "string"
+            },
+            "description": "API Access Key",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response containing health check status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthCheckResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JSON response containing unauthorized message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "JSON response containing forbidden message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "JSON response containing internal server error message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utils/validate": {
+      "post": {
+        "summary": "API route used to validate US phone numbers",
+        "tags": [
+          "Utils API"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-ApiKey",
+            "schema": {
+              "type": "string"
+            },
+            "description": "API Access Key",
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "description": "Raw JSON body containing sign up details",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhoneValidationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JSON response containing valid and invalid numbers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidatedPhoneNumbersResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON response containing invalid request message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequestResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JSON response containing unauthorized message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "JSON response containing forbidden message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "JSON response containing internal server error message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utils/zipcode/{code}": {
+      "get": {
+        "summary": "API route used to validate US phone numbers",
+        "tags": [
+          "Utils API"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-ApiKey",
+            "schema": {
+              "type": "string"
+            },
+            "description": "API Access Key",
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "code",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Zipcode to retrieve data for",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response containing valid and invalid numbers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZipCodeDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON response containing invalid zip code response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidZipCodeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JSON response containing unauthorized message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "JSON response containing forbidden message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "JSON response containing internal server error message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/texas-real-foods/health": {
+      "get": {
+        "summary": "API route used to perform health check on server",
+        "tags": [
+          "Business API"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-ApiKey",
+            "schema": {
+              "type": "string"
+            },
+            "description": "API Access Key",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response containing health check status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthCheckResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JSON response containing unauthorized message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "JSON response containing forbidden message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "JSON response containing internal server error message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/texas-real-foods/businesses": {
+      "get": {
+        "summary": "API route used to retrieve list of businesses",
+        "tags": [
+          "Business API"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-ApiKey",
+            "schema": {
+              "type": "string"
+            },
+            "description": "API Access Key",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response containing business data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListBusinessResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JSON response containing unauthorized message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "JSON response containing forbidden message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "JSON response containing internal server error message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/texas-real-foods/notifications": {
+      "get": {
+        "summary": "API route used to retrieve list of notifications",
+        "tags": [
+          "Business API"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-ApiKey",
+            "schema": {
+              "type": "string"
+            },
+            "description": "API Access Key",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response containing notifications",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListNotificationsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JSON response containing unauthorized message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "JSON response containing forbidden message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "JSON response containing internal server error message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/texas-real-foods/business": {
+      "post": {
+        "summary": "API route used to register new business for analysis",
+        "tags": [
+          "Business API"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-ApiKey",
+            "schema": {
+              "type": "string"
+            },
+            "description": "API Access Key",
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "description": "Raw JSON body containing business details",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewBusinessRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JSON response containing success message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessCreatedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON response containing invalid request message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequestResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JSON response containing unauthorized message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "JSON response containing forbidden message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "JSON response containing internal server error message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/texas-real-foods/business/info/{businessId}": {
+      "post": {
+        "summary": "API route used to update business info",
+        "tags": [
+          "Business API"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-ApiKey",
+            "schema": {
+              "type": "string"
+            },
+            "description": "API Access Key",
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "businessId",
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID of business",
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "description": "Raw JSON body containing business details",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BusinessInfoPatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JSON response containing success message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessPatchedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON response containing invalid request message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequestResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JSON response containing unauthorized message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "JSON response containing forbidden message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "JSON response containing internal server error message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/texas-real-foods/business/meta/{businessId}": {
+      "post": {
+        "summary": "API route used to update business metadata",
+        "tags": [
+          "Business API"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-ApiKey",
+            "schema": {
+              "type": "string"
+            },
+            "description": "API Access Key",
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "businessId",
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID of business",
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "description": "Raw JSON body containing business details",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BusinessMetaPatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JSON response containing success message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessPatchedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON response containing invalid request message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequestResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JSON response containing unauthorized message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "JSON response containing forbidden message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "JSON response containing internal server error message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-ApiKey"
+      }
+    },
+    "schemas": {
+      "HealthCheckResponse": {
+        "properties": {
+          "http_code": {
+            "type": "integer",
+            "example": 200
+          },
+          "message": {
+            "type": "string",
+            "example": "Service running"
+          }
+        }
+      },
+      "UnauthorizedResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "http_code": {
+            "type": "integer",
+            "example": 401
+          },
+          "message": {
+            "type": "string",
+            "example": "Unauthorized"
+          }
+        }
+      },
+      "ForbiddenResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "http_code": {
+            "type": "integer",
+            "example": 403
+          },
+          "message": {
+            "type": "string",
+            "example": "Forbidden"
+          }
+        }
+      },
+      "InvalidRequestResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "http_code": {
+            "type": "integer",
+            "example": 400
+          },
+          "message": {
+            "type": "string",
+            "example": "Invalid request body"
+          }
+        }
+      },
+      "InternalServerErrorResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "http_code": {
+            "type": "integer",
+            "example": 500
+          },
+          "message": {
+            "type": "string",
+            "example": "Internal server error"
+          }
+        }
+      },
+      "MailChimpSignUpRequest": {
+        "properties": {
+          "first_name": {
+            "type": "string",
+            "example": "John"
+          },
+          "last_name": {
+            "type": "string",
+            "example": "Doe"
+          },
+          "zip_code": {
+            "type": "integer",
+            "example": 75014
+          }
+        }
+      },
+      "MailChimpTriggerSuccess": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "http_code": {
+            "type": "integer",
+            "example": 202
+          },
+          "message": {
+            "type": "string",
+            "example": "Successfully started mail relay job"
+          },
+          "job_id": {
+            "type": "string",
+            "example": "709628d5-d7ff-43a7-9126-bcd4566959a1"
+          }
+        }
+      },
+      "MailRelayEntry": {
+        "properties": {
+          "entry_id": {
+            "type": "string",
+            "example": "709628d5-d7ff-43a7-9126-bcd4566959a1"
+          },
+          "event_timestamp": {
+            "type": "string",
+            "example": "2021-02-04T12:47:55.531Z"
+          },
+          "status": {
+            "type": "string",
+            "example": "completed"
+          },
+          "completed": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "entry_id": {
+                "type": "string",
+                "example": "709628d5-d7ff-43a7-9126-bcd4566959a1"
+              },
+              "first_name": {
+                "type": "string",
+                "example": "John"
+              },
+              "last_name": {
+                "type": "string",
+                "example": "Doe"
+              },
+              "zip_code": {
+                "type": "string",
+                "example": 75493
+              }
+            }
+          }
+        }
+      },
+      "MailRelayEntriesResponse": {
+        "properties": {
+          "http_code": {
+            "type": "integer",
+            "example": 200
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MailRelayEntry"
+            }
+          }
+        }
+      },
+      "PhoneValidationRequest": {
+        "properties": {
+          "country_code": {
+            "type": "string",
+            "example": "US"
+          },
+          "numbers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "202-555-0133",
+              "+1-202-555-0152",
+              "564"
+            ]
+          }
+        }
+      },
+      "ValidatedPhoneNumbersResponse": {
+        "properties": {
+          "http_code": {
+            "type": "integer",
+            "example": 200
+          },
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "valid": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "example": [
+                  "+1-202-555-0152",
+                  "202-555-0133"
+                ]
+              },
+              "invalid": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "example": [
+                  "564"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "InvalidZipCodeResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "http_code": {
+            "type": "integer",
+            "example": 400
+          },
+          "message": {
+            "type": "string",
+            "example": "invalid zip code"
+          }
+        }
+      },
+      "ZipCodeDataResponse": {
+        "properties": {
+          "http_code": {
+            "type": "integer",
+            "example": 200
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "zip_code": {
+                "type": "string",
+                "example": 75014
+              },
+              "zip_code_type": {
+                "type": "string",
+                "example": "PO BOX"
+              },
+              "active": {
+                "type": "boolean",
+                "example": true
+              },
+              "city": {
+                "type": "string",
+                "example": "Irving"
+              },
+              "state": {
+                "type": "string",
+                "example": "TX"
+              },
+              "county": {
+                "type": "string",
+                "example": "Dallas County"
+              },
+              "timezone": {
+                "type": "string",
+                "example": "America/Chicago"
+              },
+              "area_codes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "example": [
+                  "214"
+                ]
+              },
+              "country": {
+                "type": "string",
+                "example": "US"
+              },
+              "lat": {
+                "type": "string",
+                "example": 32.8139
+              },
+              "long": {
+                "type": "string",
+                "example": -96.9488
+              },
+              "economic_region": {
+                "type": "string",
+                "example": "North Central Texas"
+              }
+            }
+          }
+        }
+      },
+      "BusinessEntry": {
+        "properties": {
+          "business_name": {
+            "type": "string",
+            "example": "example-business"
+          },
+          "business_id": {
+            "type": "string",
+            "example": "655357ab-e7a8-406d-87bb-0736f6538339"
+          },
+          "business_uri": {
+            "type": "string",
+            "example": "https://example-business.com"
+          },
+          "last_update": {
+            "type": "string",
+            "example": "2021-02-04T12:35:29.127Z"
+          },
+          "added": {
+            "type": "string",
+            "example": "2021-01-29T08:19:04.332Z"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "yelp_business_id": {
+                "type": "string",
+                "example": "example-business-3"
+              }
+            }
+          }
+        }
+      },
+      "ListBusinessResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "http_code": {
+            "type": "integer",
+            "example": 200
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BusinessEntry"
+            }
+          }
+        }
+      },
+      "Notification": {
+        "properties": {
+          "notification_id": {
+            "type": "string",
+            "example": "655357ab-e7a8-406d-87bb-0736f6538339"
+          },
+          "event_timestamp": {
+            "type": "string",
+            "example": "2021-02-04T12:35:29.127Z"
+          },
+          "hash": {
+            "type": "string",
+            "example": "aff821945c66cb748592ede3ec2aac90ddfdea72d1f67ab0d983e05fc2b7a58b"
+          },
+          "notification": {
+            "type": "object",
+            "properties": {
+              "business_name": {
+                "type": "string",
+                "example": "example-business"
+              },
+              "business_id": {
+                "type": "string",
+                "example": "655357ab-e7a8-406d-87bb-0736f6538339"
+              },
+              "notification": {
+                "type": "string",
+                "example": "example notification message. somethings changed"
+              },
+              "event_timestamp": {
+                "type": "string",
+                "example": "2021-02-04T12:35:29.127Z"
+              }
+            }
+          }
+        }
+      },
+      "ListNotificationsResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "http_code": {
+            "type": "integer",
+            "example": 200
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notification"
+            }
+          }
+        }
+      },
+      "NewBusinessRequest": {
+        "properties": {
+          "business_name": {
+            "type": "string",
+            "example": "example-business"
+          },
+          "business_uri": {
+            "type": "string",
+            "example": "https://example-business.com"
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "yelp_business_id": {
+                "type": "string",
+                "example": "example-business-6"
+              }
+            }
+          }
+        }
+      },
+      "BusinessCreatedResponse": {
+        "properties": {
+          "http_code": {
+            "type": "integer",
+            "example": 201
+          },
+          "message": {
+            "type": "string",
+            "example": "Successfully created business"
+          }
+        }
+      },
+      "BusinessMetaPatchRequest": {
+        "properties": {
+          "operation": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "op": {
+                  "type": "string",
+                  "example": "add"
+                },
+                "value": {
+                  "type": "string",
+                  "example": "example-business-6"
+                },
+                "path": {
+                  "type": "string",
+                  "example": "/yelp_business_id"
+                }
+              }
+            }
+          }
+        }
+      },
+      "BusinessInfoPatchRequest": {
+        "properties": {
+          "business_uri": {
+            "type": "string",
+            "example": "https://example-business-updated.com"
+          }
+        }
+      },
+      "BusinessPatchedResponse": {
+        "properties": {
+          "http_code": {
+            "type": "integer",
+            "example": 200
+          },
+          "message": {
+            "type": "string",
+            "example": "Successfully updated business"
+          }
+        }
+      }
+    }
+  }
+}

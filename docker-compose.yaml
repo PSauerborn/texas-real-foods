@@ -90,6 +90,16 @@ services:
     env_file:
     - go/cmd/mail-relay/.env
 
+  api-documentation:
+    build:
+      context: ./docs/openapi
+    container_name: trf-api-documentation
+    networks:
+    - core
+    - texas-real-foods
+    environment:
+      BASE_URL: /api/documentation
+
 networks:
   core:
     name: core
