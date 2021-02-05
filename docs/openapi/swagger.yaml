@@ -267,7 +267,7 @@ paths:
 
   /utils/zipcode/{code}:
     get:
-      summary: API route used to validate US phone numbers
+      summary: API route used to retrieve data on US Zip Codes
       tags:
       - Utils API
       security:
@@ -508,7 +508,7 @@ paths:
                 $ref: '#/components/schemas/InternalServerErrorResponse'
 
   /texas-real-foods/business/info/{businessId}:
-    post:
+    patch:
       summary: API route used to update business info
       tags:
       - Business API
@@ -571,7 +571,7 @@ paths:
                 $ref: '#/components/schemas/InternalServerErrorResponse'
 
   /texas-real-foods/business/meta/{businessId}:
-    post:
+    patch:
       summary: API route used to update business metadata
       tags:
       - Business API
