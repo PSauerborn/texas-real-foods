@@ -66,17 +66,17 @@ services:
     env_file:
     - go/cmd/auto-updater/yelp/.env
 
-  google-updater:
-    build:
-      context: ./go
-      dockerfile: cmd/auto-updater/google/Dockerfile
-    container_name: texas-real-foods-updater-google
-    networks:
-    - core
-    - postgres
-    - texas-real-foods
-    env_file:
-    - go/cmd/auto-updater/google/.env
+  # google-updater:
+  #   build:
+  #     context: ./go
+  #     dockerfile: cmd/auto-updater/google/Dockerfile
+  #   container_name: texas-real-foods-updater-google
+  #   networks:
+  #   - core
+  #   - postgres
+  #   - texas-real-foods
+  #   env_file:
+  #   - go/cmd/auto-updater/google/.env
 
   syncer:
     build:
