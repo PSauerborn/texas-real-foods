@@ -1,7 +1,12 @@
 package connectors
 
 import (
+    "fmt"
 
+    log "github.com/sirupsen/logrus"
+
+    "texas_real_foods/pkg/connectors"
+    "texas_real_foods/pkg/utils"
 )
 
 type GoogleAPIConnector struct{
@@ -14,4 +19,60 @@ func NewGoogleAPIConnector(baseUrl, apiKey string) *GoogleAPIConnector {
         BaseAPIUrl: baseUrl,
         APIKey: apiKey,
     }
+}
+
+func(connector *GoogleAPIConnector) CollectData(businesses []connectors.BusinessMetadata) (
+    []connectors.BusinessUpdate, error) {
+
+    log.Info(fmt.Sprintf("updating data for %d businesses", len(businesses)))
+    updates := []connectors.BusinessUpdate{}
+
+    for _, business := range(businesses) {
+        // convert metadata field into struct. note that not all
+        // business entries may have metadata fields required to
+        // process Google API requests
+        meta, err := ParseGoogleMetadata(business.Metadata)
+        if err != nil {
+            log.Warn(fmt.Sprintf("cannot process business %s: invalid google metadata",
+            business.BusinessId))
+            continue
+        }
+        // collect new values for business and append to results
+        updated, err := connector.UpdateBusiness(business, meta)
+        if err != nil {
+            log.Error(fmt.Errorf("unable to update business: %+v", err))
+            continue
+        }
+        updates = append(updates, updated)
+    }
+    return updates, nil
+}
+
+// function to collect business data from google place API
+func(connector *GoogleAPIConnector) UpdateBusiness(business connectors.BusinessMetadata,
+    meta GoogleMetadata) (connectors.BusinessUpdate, error) {
+    log.Debug(fmt.Sprintf("collecting data from Google Place API for business %+v", business))
+    // request data from google place API
+    response, err := GetGoogleBusinessInfo(meta.GooglePlaceId, connector.APIKey)
+    if err != nil {
+        log.Error(fmt.Errorf("unable to collect data for business '%s': %+v", business.BusinessName, err))
+        return connectors.BusinessUpdate{}, err
+    }
+
+    // generate new payload based on results from yelp API
+    payload := connectors.BusinessData{
+        WebsiteLive: true,
+        BusinessPhones: []string{utils.CleanNumber(response.FormattedPhoneNumber)},
+        Source: connector.Name(),
+    }
+    // generate new update and return
+    update := connectors.BusinessUpdate{
+        Meta: business,
+        Data: payload,
+    }
+    return update, nil
+}
+
+func(connector *GoogleAPIConnector) Name() string {
+    return "google-api-connector"
 }
