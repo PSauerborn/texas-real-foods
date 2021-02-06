@@ -19,6 +19,7 @@ var (
             "collection_interval_minutes": "1",
             "google_base_api": "https://maps.googleapis.com/maps/api/place/details/json",
             "google_api_key": "",
+            "base_api_url": "http://0.0.0.0:10999/texas-real-foods",
         },
     )
 )
@@ -37,5 +38,6 @@ func main() {
         panic(fmt.Sprintf("received invalid collection interval '%s'", intervalString))
     }
     // create new updater with data connector and run
-    updater.New(connector, interval, cfg.Get("postgres_url")).Run()
+    updater.New(connector, interval, cfg.Get("postgres_url"),
+        cfg.Get("base_api_url")).Run()
 }

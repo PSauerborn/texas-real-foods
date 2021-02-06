@@ -4,6 +4,7 @@ import (
     "fmt"
     "net/http"
     "io"
+    "io/ioutil"
     "errors"
     "encoding/json"
 
@@ -78,7 +79,9 @@ func GetYelpBusinessInfo(businessId, apiKey string) (YelpBusinessResults, error)
         log.Error("reached request limit on API")
         return YelpBusinessResults{}, ErrRequestLimitReached
     default:
-        log.Error(fmt.Errorf("received invalid response from yelp API with code %d", resp.StatusCode))
+        body, _ := ioutil.ReadAll(resp.Body)
+        log.Error(fmt.Errorf("received invalid response from yelp API with code %d: %s",
+            resp.StatusCode, string(body)))
         return YelpBusinessResults{}, ErrInvalidAPIResponse
     }
 }

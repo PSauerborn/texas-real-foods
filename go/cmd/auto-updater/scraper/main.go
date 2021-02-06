@@ -18,6 +18,7 @@ var (
             "postgres_url": "postgres://postgres:postgres-dev@192.168.99.100:5432",
             "phone_validation_api_host": "http://localhost:10847",
             "collection_interval_minutes": "1",
+            "base_api_url": "http://0.0.0.0:10999/texas-real-foods",
         },
     )
 )
@@ -35,5 +36,6 @@ func main() {
         panic(fmt.Sprintf("received invalid collection interval '%s'", intervalString))
     }
     // create new updater with data connector and run
-    updater.New(connector, interval, cfg.Get("postgres_url")).Run()
+    updater.New(connector, interval, cfg.Get("postgres_url"),
+        cfg.Get("base_api_url")).Run()
 }

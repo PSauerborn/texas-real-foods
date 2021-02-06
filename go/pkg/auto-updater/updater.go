@@ -21,11 +21,12 @@ var (
 // interface implementation, which is used to collect data from
 // a particular data source (yelp, google, website etc)
 func New(connector connectors.AutoUpdateDataConnector, collectionPeriod int,
-    postgresUrl string) *AutoUpdater {
+    postgresUrl, baseApiUrl string) *AutoUpdater {
     return &AutoUpdater{
         PostgresURL: postgresUrl,
         DataConnector: connector,
         CollectionPeriodMinutes: collectionPeriod,
+        BaseAPIUrl: baseApiUrl,
     }
 }
 
@@ -33,6 +34,7 @@ func New(connector connectors.AutoUpdateDataConnector, collectionPeriod int,
 // instance has a separate data connector and notification engine
 type AutoUpdater struct{
     PostgresURL             string
+    BaseAPIUrl              string
     CollectionPeriodMinutes int
     DataConnector           connectors.AutoUpdateDataConnector
 }
@@ -41,15 +43,19 @@ type AutoUpdater struct{
 // businesses
 func(updater *AutoUpdater) GetCurrentBusinesses() ([]connectors.BusinessMetadata, error) {
     // establish new connection to postgres persistence
-    db := NewPersistence(updater.PostgresURL)
-    conn, err := db.Connect()
+    payload, err := GetBusinessesFromAPI(updater.BaseAPIUrl)
     if err != nil {
-        log.Error(fmt.Errorf("unable to connect to postgres: %+v", err))
+        log.Error(fmt.Errorf("unable to retrieve businesses from API: %+v", err))
         return []connectors.BusinessMetadata{}, err
     }
-    defer conn.Close(context.Background())
-    // get all businesses from database and return
-    return db.GetAllMetadata()
+    return payload.Data, nil
+}
+
+// function used to retrieve business metadata for all stored
+// businesses
+func(updater *AutoUpdater) GetCurrentBusinessesFromAPI() ([]connectors.BusinessMetadata, error) {
+
+    return []connectors.BusinessMetadata{}, nil
 }
 
 // function used to process business data updates

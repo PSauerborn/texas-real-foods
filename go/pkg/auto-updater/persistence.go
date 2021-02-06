@@ -6,7 +6,6 @@ import (
     "context"
 
     "github.com/jackc/pgx/v4"
-    "github.com/google/uuid"
     log "github.com/sirupsen/logrus"
 
     "texas_real_foods/pkg/connectors"
@@ -39,47 +38,10 @@ func(db *Persistence) Connect() (*pgx.Conn, error) {
     return conn, err
 }
 
-// function to retrieve all business metadata from the postgres
-// database
-func(db *Persistence) GetAllMetadata() ([]connectors.BusinessMetadata, error) {
-    log.Debug("retrieving business metadata")
-
-    results := []connectors.BusinessMetadata{}
-    query := `SELECT business_id,business_name,metadata,uri FROM asset_metadata`
-    rows, err := db.Session.Query(context.Background(), query)
-    if err != nil {
-        switch err {
-        case pgx.ErrNoRows:
-            return results, nil
-        default:
-            return results, err
-        }
-    }
-
-    for rows.Next() {
-        var (businessId uuid.UUID; businessName, businessUri string)
-        var meta map[string]interface{}
-
-        if err := rows.Scan(&businessId, &businessName, &meta,
-            &businessUri); err != nil {
-            log.Warn(fmt.Errorf("unable to scan values into local variables: %+v", err))
-            continue
-        }
-        results = append(results, connectors.BusinessMetadata{
-            BusinessId: businessId,
-            BusinessName: businessName,
-            BusinessURI: businessUri,
-            Metadata: meta,
-        })
-    }
-    return results, nil
-}
-
 // function to update business data in the database. note that
 // updates are done as inserts i.e. existing values are overwritten
 func(db *Persistence) UpdateBusinessData(update connectors.BusinessUpdate) error {
     log.Debug(fmt.Sprintf("updating business %+v", update))
-
     var query string
 
     // execute query to insert new data arguments
