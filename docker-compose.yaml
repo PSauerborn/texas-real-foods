@@ -118,8 +118,10 @@ services:
     container_name: texas-real-foods-hermes
     expose:
     - 7789/udp
+    - 8080
     networks:
     - texas-real-foods
+    - core
     environment:
       LOG_LEVEL: DEBUG
 
