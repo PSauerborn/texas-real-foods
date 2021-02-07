@@ -112,6 +112,17 @@ services:
     environment:
       BASE_URL: /api/docs
 
+  hermes-server:
+    build:
+      context: ./go/cmd/hermes
+    container_name: texas-real-foods-hermes
+    expose:
+    - 7789/udp
+    networks:
+    - texas-real-foods
+    environment:
+      LOG_LEVEL: DEBUG
+
 networks:
   core:
     name: core

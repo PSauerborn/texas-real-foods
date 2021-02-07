@@ -6,6 +6,7 @@ import (
     "net/url"
 
     "github.com/gocolly/colly/v2"
+    "github.com/PSauerborn/hermes/pkg/client"
     log "github.com/sirupsen/logrus"
 
     "texas_real_foods/pkg/connectors"
@@ -43,6 +44,13 @@ func(connector *WebConnector) CollectData(businesses []connectors.BusinessMetada
     []connectors.BusinessUpdate, error) {
     log.Info(fmt.Sprintf("collecting data for %d businesses using web connector", len(businesses)))
 
+    // create new instance of hermes client to update prometheus metrics
+    hermesClient := hermes_client.New("texas-real-foods-hermes", 7789)
+    labels := map[string]string{"source": connector.Name()}
+    // increment gauge measuring running jobs and defer decrementing
+    hermesClient.IncrementGauge("running_collection_jobs", labels)
+    defer hermesClient.DecrementGauge("running_collection_jobs", labels)
+
     // generate new webscraper and save globally
     scraper = colly.NewCollector()
     scraper.AllowURLRevisit = false
@@ -66,6 +74,9 @@ func(connector *WebConnector) CollectData(businesses []connectors.BusinessMetada
 
         // scrape site for updated business information
         update, err := connector.ScrapeSiteData(business)
+        // increment hermes counter used to measure total number of sites scraped
+        hermesClient.IncrementCounter("total_sites_scraped",
+            map[string]string{"business_name": business.BusinessName})
         if err != nil {
             log.Error(fmt.Sprintf("unable to scrape data for business %+v: %+v", business, err))
             continue

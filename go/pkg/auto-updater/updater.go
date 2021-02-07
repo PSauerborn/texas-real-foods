@@ -51,13 +51,6 @@ func(updater *AutoUpdater) GetCurrentBusinesses() ([]connectors.BusinessMetadata
     return payload.Data, nil
 }
 
-// function used to retrieve business metadata for all stored
-// businesses
-func(updater *AutoUpdater) GetCurrentBusinessesFromAPI() ([]connectors.BusinessMetadata, error) {
-
-    return []connectors.BusinessMetadata{}, nil
-}
-
 // function used to process business data updates
 func(updater *AutoUpdater) ProcessBusinessUpdates(updates []connectors.BusinessUpdate) error {
     // establish new connection to postgres persistence

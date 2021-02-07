@@ -3,6 +3,7 @@ package connectors
 import (
     "fmt"
 
+    "github.com/PSauerborn/hermes/pkg/client"
     log "github.com/sirupsen/logrus"
 
     "texas_real_foods/pkg/connectors"
@@ -36,6 +37,13 @@ func(connector *YelpAPIConnector) CollectData(businesses []connectors.BusinessMe
     log.Info(fmt.Sprintf("updating data for %d businesses", len(businesses)))
     updates := []connectors.BusinessUpdate{}
 
+    // create new instance of hermes client to update prometheus metrics
+    hermesClient := hermes_client.New("texas-real-foods-hermes", 7789)
+    labels := map[string]string{"source": connector.Name()}
+    // increment gauge measuring running jobs and defer decrementing
+    hermesClient.IncrementGauge("running_collection_jobs", labels)
+    defer hermesClient.DecrementGauge("running_collection_jobs", labels)
+
     for _, business := range(businesses) {
         // convert metadata field into struct. note that not all
         // business entries may have metadata fields required to
@@ -46,6 +54,10 @@ func(connector *YelpAPIConnector) CollectData(businesses []connectors.BusinessMe
             business.BusinessId))
             continue
         }
+
+        // increment hermes counter used to measure total number of sites scraped
+        hermesClient.IncrementCounter("total_yelp_requests",
+            map[string]string{"business_name": business.BusinessName})
         // collect new values for business and append to results
         updated, err := connector.UpdateBusiness(business, meta)
         if err != nil {

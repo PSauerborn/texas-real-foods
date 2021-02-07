@@ -1,0 +1,22 @@
+{
+    "service_name": "texas-real-foods",
+    "gauges": [
+        {
+            "metric_name": "running_collection_jobs",
+            "metric_description": "gauge used to track the number of running data collection jobs",
+            "labels": ["source"]
+        }
+    ],
+    "counters": [
+        {
+            "metric_name": "total_yelp_requests",
+            "metric_description": "count of the number of requests made to the Yelp Fusion API",
+            "labels": ["business_name"]
+        },
+        {
+            "metric_name": "total_sites_scraped",
+            "metric_description": "count of the number of data sites scraped",
+            "labels": ["business_name"]
+        }
+    ]
+}
