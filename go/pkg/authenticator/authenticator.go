@@ -2,7 +2,6 @@ package authenticator
 
 import (
     "fmt"
-    "context"
     "net/http"
 
     "github.com/gin-gonic/gin"
@@ -59,7 +58,7 @@ func Authenticate(ctx *gin.Context) {
             gin.H{"http_code": http.StatusInternalServerError, "message": "Internal server error"})
         return
     }
-    defer conn.Close(context.Background())
+    defer conn.Close()
 
     // validate API key in postgres server
     valid, err := db.IsValidApiKey(apiKey)

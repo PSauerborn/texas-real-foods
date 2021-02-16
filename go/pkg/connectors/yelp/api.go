@@ -35,6 +35,7 @@ func ParseYelpResponse(content io.ReadCloser) (YelpBusinessResults, error) {
         BusinessId: response.Id,
         BusinessName: response.Name,
         PhoneNumber: response.Phone,
+        IsOpen: !response.IsClosed,
     }
     return data, nil
 }

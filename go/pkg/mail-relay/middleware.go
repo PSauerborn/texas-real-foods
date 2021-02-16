@@ -2,7 +2,6 @@ package mail_relay
 
 import (
     "fmt"
-    "context"
     "net/http"
 
     "github.com/gin-gonic/gin"
@@ -23,7 +22,7 @@ func PostgresSessionMiddleware(postgresUrl string) gin.HandlerFunc {
                 gin.H{"http_code": http.StatusInternalServerError, "message": "Internal server error"})
             return
         }
-        defer conn.Close(context.Background())
+        defer conn.Close()
 
         ctx.Set("persistence", db)
         ctx.Next()

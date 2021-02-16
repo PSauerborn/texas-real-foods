@@ -5,37 +5,23 @@ import (
     "time"
     "context"
 
-    "github.com/jackc/pgx/v4"
     log "github.com/sirupsen/logrus"
 
     "texas_real_foods/pkg/connectors"
+    "texas_real_foods/pkg/utils"
 )
 
 
 type Persistence struct{
-    DatabaseURL string
-    Session     *pgx.Conn
+    *utils.BasePostgresPersistence
 }
 
 func NewPersistence(url string) *Persistence {
+    // create instance of base persistence
+    basePersistence := utils.NewPersistence(url)
     return &Persistence{
-        DatabaseURL: url,
+        basePersistence,
     }
-}
-
-// function to connect persistence to postgres server
-// note that the connection is returned and should be
-// closed with a defer conn.Close(context) statement
-func(db *Persistence) Connect() (*pgx.Conn, error) {
-    log.Debug(fmt.Sprintf("creating new database connection"))
-    // connect to postgres server and set session in persistence
-    conn, err := pgx.Connect(context.Background(), db.DatabaseURL)
-    if err != nil {
-        log.Error(fmt.Errorf("error connecting to postgres service: %+v", err))
-        return nil, err
-    }
-    db.Session = conn
-    return conn, err
 }
 
 // function to update business data in the database. note that
@@ -45,11 +31,11 @@ func(db *Persistence) UpdateBusinessData(update connectors.BusinessUpdate) error
     var query string
 
     // execute query to insert new data arguments
-    query = `INSERT INTO asset_data(business_id,phone,website_live,source)
-    VALUES($1,$2,$3,$4) ON CONFLICT (business_id,source) DO UPDATE
-    SET phone=$2, website_live=$3`
+    query = `INSERT INTO asset_data(business_id,phone,website_live,source,open)
+        VALUES($1,$2,$3,$4,$5) ON CONFLICT (business_id,source) DO UPDATE
+        SET phone=$2, website_live=$3, open=$5`
     _, err := db.Session.Exec(context.Background(), query, update.Meta.BusinessId,
-    update.Data.BusinessPhones, update.Data.WebsiteLive, update.Data.Source)
+        update.Data.BusinessPhones, update.Data.WebsiteLive, update.Data.Source, update.Data.BusinessOpen)
     if err != nil {
         return err
     }

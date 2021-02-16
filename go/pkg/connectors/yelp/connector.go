@@ -83,6 +83,7 @@ func(connector *YelpAPIConnector) UpdateBusiness(business connectors.BusinessMet
         WebsiteLive: true,
         BusinessPhones: []string{utils.CleanNumber(yelpResults.PhoneNumber)},
         Source: connector.Name(),
+        BusinessOpen: yelpResults.IsOpen,
     }
     // generate new update and return
     update := connectors.BusinessUpdate{

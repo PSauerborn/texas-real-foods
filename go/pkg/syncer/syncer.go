@@ -5,7 +5,6 @@ import (
     "time"
     "sync"
     "errors"
-    "context"
     "reflect"
 
     log "github.com/sirupsen/logrus"
@@ -41,7 +40,7 @@ func(syncer *Syncer) SyncData() error {
         log.Error(fmt.Errorf("unable to connect to postgres: %+v", err))
         return err
     }
-    defer conn.Close(context.Background())
+    defer conn.Close()
     // get all businesses from database and return
     businesses, err := db.GetAllMetadata()
     if err != nil {

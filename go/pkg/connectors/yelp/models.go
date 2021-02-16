@@ -56,6 +56,7 @@ type YelpBusinessResults struct{
     BusinessId   string `json:"business_id"`
     BusinessName string `json:"business_name"`
     PhoneNumber  string `json:"phone_number"`
+    IsOpen       bool   `json:"is_open"`
 }
 
 // struct to store API response body from yelp

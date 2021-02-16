@@ -91,7 +91,6 @@ func(connector *WebConnector) ScrapeSiteData(business connectors.BusinessMetadat
     connectors.BusinessUpdate, error) {
 
     var (scrapeError error; data connectors.BusinessData)
-
     // add callbacks to scraper and start
     scraper.OnRequest(func(r *colly.Request) {
         log.Debug(fmt.Sprintf("making request to site %s", r.URL))
@@ -101,7 +100,6 @@ func(connector *WebConnector) ScrapeSiteData(business connectors.BusinessMetadat
     scraper.OnResponse(func(r *colly.Response) {
         log.Debug(fmt.Sprintf("connected to page with code %d", r.StatusCode))
         if r.StatusCode == 200 {
-
             // parse site and extract data
             data, scrapeError = connector.ParseSiteData(business, r.Body)
             if scrapeError != nil {
@@ -113,6 +111,7 @@ func(connector *WebConnector) ScrapeSiteData(business connectors.BusinessMetadat
             data = connectors.BusinessData{
                 WebsiteLive: false,
                 Source: connector.Name(),
+                BusinessOpen: false,
             }
         }
     })
@@ -133,7 +132,7 @@ func(connector *WebConnector) ScrapeSiteData(business connectors.BusinessMetadat
             return connectors.BusinessUpdate{}, scrapeError
         }
     }
-
+    // generate new business update and return
     update := connectors.BusinessUpdate{
         Meta: business,
         Data: data,
@@ -159,6 +158,7 @@ func(connector *WebConnector) ParseSiteData(business connectors.BusinessMetadata
         WebsiteLive: true,
         BusinessPhones: phones,
         Source: connector.Name(),
+        BusinessOpen: true,
     }
     return businessData, nil
 }

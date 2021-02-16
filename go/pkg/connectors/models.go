@@ -25,5 +25,6 @@ type BusinessMetadata struct{
 type BusinessData struct{
     WebsiteLive    bool     `json:"website_live"`
     BusinessPhones []string `json:"business_phones"`
+    BusinessOpen   bool     `json:"business_open"`
     Source         string   `json:"string"`
 }

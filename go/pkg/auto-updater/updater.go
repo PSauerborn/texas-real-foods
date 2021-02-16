@@ -4,7 +4,6 @@ import (
     "fmt"
     "time"
     "sync"
-    "context"
 
     log "github.com/sirupsen/logrus"
 
@@ -60,13 +59,13 @@ func(updater *AutoUpdater) ProcessBusinessUpdates(updates []connectors.BusinessU
         log.Error(fmt.Errorf("unable to connect to postgres server: %+v", err))
         return err
     }
-    defer conn.Close(context.Background())
+    defer conn.Close()
 
     // iterate over businesses and update in database
     for _, update := range(updates) {
         if err := db.UpdateBusinessData(update); err != nil {
             log.Warn(fmt.Errorf("unable to update business '%s': %+v",
-            update.Meta.BusinessName, err))
+                update.Meta.BusinessName, err))
         }
     }
     return nil

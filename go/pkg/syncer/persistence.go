@@ -9,33 +9,20 @@ import (
     log "github.com/sirupsen/logrus"
 
     "texas_real_foods/pkg/connectors"
+    "texas_real_foods/pkg/utils"
 )
 
 
 type Persistence struct{
-    DatabaseURL string
-    Session     *pgx.Conn
+    *utils.BasePostgresPersistence
 }
 
 func NewPersistence(url string) *Persistence {
+    // create instance of base persistence
+    basePersistence := utils.NewPersistence(url)
     return &Persistence{
-        DatabaseURL: url,
+        basePersistence,
     }
-}
-
-// function to connect persistence to postgres server
-// note that the connection is returned and should be
-// closed with a defer conn.Close(context) statement
-func(db *Persistence) Connect() (*pgx.Conn, error) {
-    log.Debug(fmt.Sprintf("creating new database connection"))
-    // connect to postgres server and set session in persistence
-    conn, err := pgx.Connect(context.Background(), db.DatabaseURL)
-    if err != nil {
-        log.Error(fmt.Errorf("error connecting to postgres service: %+v", err))
-        return nil, err
-    }
-    db.Session = conn
-    return conn, err
 }
 
 // function to retrieve all business metadata from the postgres

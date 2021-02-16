@@ -2,7 +2,6 @@ package mail_relay
 
 import (
     "fmt"
-    "context"
     "errors"
     "net/http"
 
@@ -100,7 +99,7 @@ func(relay *MailRelay) ProcessEvents() {
         }
         // update relay job in database
         db.UpdateMailEntry(e.EntryId, "completed", true)
-        conn.Close(context.Background())
+        conn.Close()
     }
 }
 
