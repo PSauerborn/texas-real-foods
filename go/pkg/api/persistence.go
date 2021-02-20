@@ -8,33 +8,22 @@ import (
     "github.com/jackc/pgx/v4"
     "github.com/google/uuid"
     log "github.com/sirupsen/logrus"
+
+    "texas_real_foods/pkg/utils"
+    "texas_real_foods/pkg/connectors"
 )
 
 
-type Persistence struct{
-    DatabaseURL string
-    Session     *pgx.Conn
+type Persistence struct {
+    *utils.BasePostgresPersistence
 }
 
 func NewPersistence(url string) *Persistence {
+    // create instance of base persistence
+    basePersistence := utils.NewPersistence(url)
     return &Persistence{
-        DatabaseURL: url,
+        basePersistence,
     }
-}
-
-// function to connect persistence to postgres server
-// note that the connection is returned and should be
-// closed with a defer conn.Close(context) statement
-func(db *Persistence) Connect() (*pgx.Conn, error) {
-    log.Debug(fmt.Sprintf("creating new database connection"))
-    // connect to postgres server and set session in persistence
-    conn, err := pgx.Connect(context.Background(), db.DatabaseURL)
-    if err != nil {
-        log.Error(fmt.Errorf("error connecting to postgres service: %+v", err))
-        return nil, err
-    }
-    db.Session = conn
-    return conn, err
 }
 
 // function to insert new business into database
@@ -145,6 +134,7 @@ func(db *Persistence) UpdateBusinessMetadata(meta map[string]interface{}, busine
     return err
 }
 
+// function to delete a business with given business id
 func(db *Persistence) DeleteBusiness(businessId uuid.UUID) error {
     log.Debug(fmt.Sprintf("deleting business %s", businessId))
 
@@ -164,6 +154,7 @@ func(db *Persistence) DeleteBusiness(businessId uuid.UUID) error {
     return nil
 }
 
+// function to retreive notifications from database
 func(db *Persistence) GetNotifications() ([]Notification, error) {
     log.Debug("retrieving notifications from database")
 
@@ -171,7 +162,6 @@ func(db *Persistence) GetNotifications() ([]Notification, error) {
 
     query := `SELECT notification_id, event_timestamp, notification, hash
     FROM notifications`
-
     rows, err := db.Session.Query(context.Background(), query)
     if err != nil {
         switch err {
@@ -200,4 +190,74 @@ func(db *Persistence) GetNotifications() ([]Notification, error) {
         })
     }
     return notifications, nil
+}
+
+// function to retrieve static data for a given business with business ID
+func(db *Persistence) GetStaticBusinessData(businessId uuid.UUID) ([]connectors.BusinessData, error) {
+    log.Debug(fmt.Sprintf("retrieving static data for business %s", businessId))
+
+    results := []connectors.BusinessData{}
+    query := `SELECT phone,website_live,open,source FROM asset_data
+        WHERE business_id=$1`
+    rows, err := db.Session.Query(context.Background(), query, businessId)
+    if err != nil {
+        switch err {
+        case pgx.ErrNoRows:
+            return results, nil
+        default:
+            return results, err
+        }
+    }
+
+    for rows.Next() {
+        // scan data into local variables
+        var data connectors.BusinessData
+        if err := rows.Scan(&data.BusinessPhones, &data.WebsiteLive, &data.BusinessOpen,
+            &data.Source); err != nil {
+            log.Warn(fmt.Errorf("unable to scan data into local variables: %+v", err))
+            continue
+        }
+        // adddata entry to results array
+        results = append(results, data)
+    }
+    return results, nil
+}
+
+// struct to that extends business data struct with event timestamp
+type TimeSeriesData struct {
+    EventTimestamp time.Time `json:"event_timestamp"`
+    connectors.BusinessData
+}
+
+// function to retrive timeseries data from database
+func(db *Persistence) GetTimeSeriesData(businessId uuid.UUID, start,
+    end time.Time) ([]TimeSeriesData, error) {
+
+    log.Debug(fmt.Sprintf("retrieving timeseries business data for business %s", businessId))
+    results := []TimeSeriesData{}
+    query := `SELECT phone,website_live,open,source,event_timestamp
+        FROM asset_data_timeseries WHERE business_id=$1 AND event_timestamp > $2 AND event_timestamp < $3`
+    // query rows from postgres database
+    rows, err := db.Session.Query(context.Background(), query, businessId, start, end)
+    if err != nil {
+        switch err {
+        case pgx.ErrNoRows:
+            return results, nil
+        default:
+            return results, err
+        }
+    }
+
+    for rows.Next() {
+        // scan data into local variables
+        var (data connectors.BusinessData; ts time.Time)
+        if err := rows.Scan(&data.BusinessPhones, &data.WebsiteLive, &data.BusinessOpen,
+            &data.Source, &ts); err != nil {
+            log.Warn(fmt.Errorf("unable to scan data into local variables: %+v", err))
+            continue
+        }
+        // adddata entry to results array
+        results = append(results, TimeSeriesData{ts, data})
+    }
+    return results, nil
 }

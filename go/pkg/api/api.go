@@ -36,8 +36,15 @@ func New() *gin.Engine {
     }))
 
     // add route to retrieve businesses
-    router.GET("/texas-real-foods/businesses", PostgresSessionMiddleware(), getBusinessesHandler)
-    router.GET("/texas-real-foods/notifications", PostgresSessionMiddleware(), getNotificationsHandler)
+    router.GET("/texas-real-foods/businesses", PostgresSessionMiddleware(),
+        getBusinessesHandler)
+    router.GET("/texas-real-foods/notifications", PostgresSessionMiddleware(),
+        getNotificationsHandler)
+    // add routes to retrieve static and timeseries data
+    router.GET("/texas-real-foods/data/static/:businessId", PostgresSessionMiddleware(),
+        getStaticDataHandler)
+    router.GET("/texas-real-foods/data/timeseries/:businessId/:start/:end",
+        PostgresSessionMiddleware(), getTimeSeriesHandler)
 
     // add route to create new business
     router.POST("/texas-real-foods/business", PostgresSessionMiddleware(), addNewBusinessHandler)
@@ -50,9 +57,9 @@ func New() *gin.Engine {
     return router
 }
 
+// API handler used to retrieve existing businesses
 func getBusinessesHandler(ctx *gin.Context) {
     log.Info("received request to retrieve businesses")
-
     // retrieve postgres persistence from contex and
     db, _ := ctx.MustGet("persistence").(*Persistence)
     businesses, err := db.GetBusinesses()
@@ -67,9 +74,9 @@ func getBusinessesHandler(ctx *gin.Context) {
         gin.H{"http_code": http.StatusOK, "data": businesses})
 }
 
+// API handler used to retrieve notifications
 func getNotificationsHandler(ctx *gin.Context) {
     log.Info("received request to retrieve notifications")
-
     // retrieve postgres persistence from contex and
     db, _ := ctx.MustGet("persistence").(*Persistence)
     notifications, err := db.GetNotifications()
@@ -84,6 +91,7 @@ func getNotificationsHandler(ctx *gin.Context) {
         gin.H{"http_code": http.StatusOK, "data": notifications})
 }
 
+// API handler used to add new business
 func addNewBusinessHandler(ctx *gin.Context) {
     log.Info("received request create new business")
     var request NewBusinessRequest
@@ -107,6 +115,7 @@ func addNewBusinessHandler(ctx *gin.Context) {
         gin.H{"http_code": http.StatusCreated, "message": "Successfully created business"})
 }
 
+// API handler used to update business
 func updateBusinessHandler(ctx *gin.Context) {
     log.Info("received request to update business")
     var request BusinessUpdateRequest
@@ -248,4 +257,94 @@ func deleteBusinessHandler(ctx *gin.Context) {
     }
     ctx.JSON(http.StatusOK,
         gin.H{"http_code": http.StatusOK, "message": "Successfully deleted business"})
+}
+
+// function used to retrieve static data for a given business
+func getStaticDataHandler(ctx *gin.Context) {
+    log.Info(fmt.Sprintf("received request to retrieve static data for business %s", ctx.Param("businessId")))
+    // retrieve business ID from parameters and convert to uuid
+    businessId, err := uuid.Parse(ctx.Param("businessId"))
+    if err != nil {
+        log.Error(fmt.Errorf("unable to parse parameter ID: %+v", err))
+        ctx.JSON(http.StatusBadRequest,
+            gin.H{"http_code": http.StatusBadRequest, "message": "Invalid business ID"})
+        return
+    }
+
+    // retrieve persistence from context and check if business exists
+    db, _ := ctx.MustGet("persistence").(*Persistence)
+    _, err = db.GetBusinessById(businessId)
+    if err != nil {
+        switch err {
+        case ErrBusinessNotFound:
+            ctx.JSON(http.StatusNotFound,
+                gin.H{"http_code": http.StatusNotFound, "message": "Invalid business ID"})
+            return
+        default:
+            ctx.JSON(http.StatusInternalServerError,
+                gin.H{"http_code": http.StatusInternalServerError, "message": "Internal server error"})
+            return
+        }
+    }
+
+    // get statis business data from database and return
+    data, err := db.GetStaticBusinessData(businessId)
+    if err != nil {
+        log.Error(fmt.Errorf("unable to retrieve business data: %+v", err))
+        ctx.JSON(http.StatusInternalServerError,
+            gin.H{"http_code": http.StatusInternalServerError, "message": "Internal server error"})
+        return
+    }
+    log.Info(data)
+    ctx.JSON(http.StatusOK,
+        gin.H{"http_code": http.StatusOK, "data": data})
+}
+
+// API handler used to retrieve timeseries data from database for
+// a given business with business ID
+func getTimeSeriesHandler(ctx *gin.Context) {
+    log.Info(fmt.Sprintf("received request to retrieve timeseries data for business %s", ctx.Param("businessId")))
+    // retrieve business ID from parameters and convert to uuid
+    businessId, err := uuid.Parse(ctx.Param("businessId"))
+    if err != nil {
+        log.Error(fmt.Errorf("unable to parse parameter ID: %+v", err))
+        ctx.JSON(http.StatusBadRequest,
+            gin.H{"http_code": http.StatusBadRequest, "message": "Invalid business ID"})
+        return
+    }
+
+    timeRange, err := ParseTimeRange(ctx.Param("start"), ctx.Param("end"))
+    if err != nil {
+        log.Error(fmt.Errorf("unable to parse timestamps: %+v", err))
+        ctx.JSON(http.StatusBadRequest,
+            gin.H{"http_code": http.StatusBadRequest, "message": "Invalid time range"})
+        return
+    }
+
+    // retrieve persistence from context and check if business exists
+    db, _ := ctx.MustGet("persistence").(*Persistence)
+    _, err = db.GetBusinessById(businessId)
+    if err != nil {
+        switch err {
+        case ErrBusinessNotFound:
+            ctx.JSON(http.StatusNotFound,
+                gin.H{"http_code": http.StatusNotFound, "message": "Invalid business ID"})
+            return
+        default:
+            ctx.JSON(http.StatusInternalServerError,
+                gin.H{"http_code": http.StatusInternalServerError, "message": "Internal server error"})
+            return
+        }
+    }
+
+    // get statis business data from database and return
+    data, err := db.GetTimeSeriesData(businessId, timeRange.Start, timeRange.End)
+    if err != nil {
+        log.Error(fmt.Errorf("unable to retrieve business data: %+v", err))
+        ctx.JSON(http.StatusInternalServerError,
+            gin.H{"http_code": http.StatusInternalServerError, "message": "Internal server error"})
+        return
+    }
+    ctx.JSON(http.StatusOK,
+        gin.H{"http_code": http.StatusOK, "data": GroupTimeseriesDataBySource(data)})
 }

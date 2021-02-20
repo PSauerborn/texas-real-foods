@@ -3,6 +3,7 @@ package api
 import (
     "fmt"
     "errors"
+    "time"
     "encoding/json"
 
     log "github.com/sirupsen/logrus"
@@ -10,8 +11,12 @@ import (
 )
 
 var (
+    // define custom errors
     ErrInvalidPatch        = errors.New("Invalid JSON patch operation")
     ErrInvalidBusinessMeta = errors.New("Invalid business metadata")
+    ErrInvalidStartTime    = errors.New("Invalid start timestamp")
+    ErrInvalidEndTime      = errors.New("Invalid end timestamp")
+    ErrInvalidTimeRange    = errors.New("Invalid time range")
 )
 
 func PatchBusinessMeta(business BusinessInfo,
@@ -57,4 +62,50 @@ func PatchBusinessMeta(business BusinessInfo,
         return meta, ErrInvalidBusinessMeta
     }
     return meta, nil
+}
+
+// function used to group timeseries data elements by source
+func GroupTimeseriesDataBySource(data []TimeSeriesData) (grouped map[string][]TimeSeriesData) {
+    for _, element := range(data) {
+        // if source is already present in mapping, add to current values
+        _, ok := grouped[element.Source]; if ok {
+            grouped[element.Source] = append(grouped[element.Source], element)
+        } else {
+            // add new array of values to map
+            grouped[element.Source] = []TimeSeriesData{element}
+        }
+    }
+    return
+}
+
+
+type TimeRange struct {
+    Start time.Time
+    End time.Time
+}
+
+// function to parse start and end timestamps in DD-MM-YYYY format
+func ParseTimeRange(start, end string) (TimeRange, error) {
+
+    format := "2006-01-02T15:04"
+    // parse start timestamp
+    startTimestamp, err := time.Parse(format, start)
+    if err != nil {
+        log.Error(fmt.Errorf("unable to parse start timestamp: %+v", err))
+        return TimeRange{}, ErrInvalidStartTime
+    }
+
+    // parse end timestamp
+    endTimestamp, err := time.Parse(format, end)
+    if err != nil {
+        log.Error(fmt.Errorf("unable to parse end timestamp: %+v", err))
+        return TimeRange{}, ErrInvalidEndTime
+    }
+
+    // return error if start time is after end time
+    if endTimestamp.Before(startTimestamp) {
+        return TimeRange{}, ErrInvalidTimeRange
+    }
+    timeRange := TimeRange{startTimestamp, endTimestamp}
+    return timeRange, nil
 }
