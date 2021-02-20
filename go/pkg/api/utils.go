@@ -65,7 +65,8 @@ func PatchBusinessMeta(business BusinessInfo,
 }
 
 // function used to group timeseries data elements by source
-func GroupTimeseriesDataBySource(data []TimeSeriesData) (grouped map[string][]TimeSeriesData) {
+func GroupTimeseriesDataBySource(data []TimeSeriesData) (map[string][]TimeSeriesData) {
+    grouped := map[string][]TimeSeriesData{}
     for _, element := range(data) {
         // if source is already present in mapping, add to current values
         _, ok := grouped[element.Source]; if ok {
@@ -75,7 +76,7 @@ func GroupTimeseriesDataBySource(data []TimeSeriesData) (grouped map[string][]Ti
             grouped[element.Source] = []TimeSeriesData{element}
         }
     }
-    return
+    return grouped
 }
 
 

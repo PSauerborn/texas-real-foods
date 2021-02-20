@@ -82,7 +82,7 @@ func(syncer *Syncer) SyncData() error {
                 sources = append(sources, entry.Data.Source)
             }
             message := fmt.Sprintf("found differences in data sources %+v for business %s",
-            sources, business.BusinessName)
+                sources, business.BusinessName)
 
             // send notification
             if err := syncer.SendNotification(message, hashed, business); err != nil {
