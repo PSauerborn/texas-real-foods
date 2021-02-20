@@ -19,6 +19,7 @@ var (
     ErrInvalidTimeRange    = errors.New("Invalid time range")
 )
 
+// function used to perform JSON patch operation on business metadata
 func PatchBusinessMeta(business BusinessInfo,
     operation []map[string]interface{}) (map[string]interface{}, error) {
 
@@ -66,6 +67,8 @@ func PatchBusinessMeta(business BusinessInfo,
 
 // function used to group timeseries data elements by source
 func GroupTimeseriesDataBySource(data []TimeSeriesData) (map[string][]TimeSeriesData) {
+    log.Debug(fmt.Sprintf("grouping %d data points by source...", len(data)))
+    // iterate over array of data values and group by data source
     grouped := map[string][]TimeSeriesData{}
     for _, element := range(data) {
         // if source is already present in mapping, add to current values
@@ -87,7 +90,6 @@ type TimeRange struct {
 
 // function to parse start and end timestamps in DD-MM-YYYY format
 func ParseTimeRange(start, end string) (TimeRange, error) {
-
     format := "2006-01-02T15:04"
     // parse start timestamp
     startTimestamp, err := time.Parse(format, start)

@@ -8,7 +8,8 @@ import (
     log "github.com/sirupsen/logrus"
 )
 
-
+// gin-gonic middleware used to inject new postgres
+// connection into request context
 func PostgresSessionMiddleware() gin.HandlerFunc {
     return func(ctx *gin.Context) {
         // create new persistence instance and connect to postgres

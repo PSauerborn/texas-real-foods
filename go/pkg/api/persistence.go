@@ -233,7 +233,8 @@ type TimeSeriesData struct {
 func(db *Persistence) GetTimeSeriesData(businessId uuid.UUID, start,
     end time.Time) ([]TimeSeriesData, error) {
 
-    log.Debug(fmt.Sprintf("retrieving timeseries business data for business %s", businessId))
+    log.Debug(fmt.Sprintf("retrieving timeseries business data for business %s for time range %s - %s",
+        businessId, start, end))
     results := []TimeSeriesData{}
     query := `SELECT phone,website_live,open,source,event_timestamp
         FROM asset_data_timeseries WHERE business_id=$1 AND event_timestamp > $2 AND event_timestamp < $3`

@@ -295,7 +295,6 @@ func getStaticDataHandler(ctx *gin.Context) {
             gin.H{"http_code": http.StatusInternalServerError, "message": "Internal server error"})
         return
     }
-    log.Info(data)
     ctx.JSON(http.StatusOK,
         gin.H{"http_code": http.StatusOK, "data": data})
 }
