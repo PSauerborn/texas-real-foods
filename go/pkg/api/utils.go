@@ -69,7 +69,7 @@ func GroupTimeseriesDataBySource(data []TimeSeriesData) (map[string][]TimeSeries
     grouped := map[string][]TimeSeriesData{}
     for _, element := range(data) {
         // if source is already present in mapping, add to current values
-        _, ok := grouped[element.Source]; if ok {
+        if _, ok := grouped[element.Source]; ok {
             grouped[element.Source] = append(grouped[element.Source], element)
         } else {
             // add new array of values to map
