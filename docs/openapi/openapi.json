@@ -964,6 +964,279 @@
           }
         }
       }
+    },
+    "/texas-real-foods/business/{businessId}": {
+      "delete": {
+        "summary": "API route used to delete a business",
+        "tags": [
+          "Business API"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-ApiKey",
+            "schema": {
+              "type": "string"
+            },
+            "description": "API Access Key",
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "businessId",
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID of business",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response containing success message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessDeletedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON response containing invalid request message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequestResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JSON response containing unauthorized message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "JSON response containing forbidden message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "JSON response containing internal server error message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/texas-real-foods/data/timeseries/{businessId}/{start}/{end}": {
+      "get": {
+        "summary": "API route used to retrieve current business information entries as timeseries",
+        "tags": [
+          "Business API"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-ApiKey",
+            "schema": {
+              "type": "string"
+            },
+            "description": "API Access Key",
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "businessId",
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID of business",
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "start",
+            "schema": {
+              "type": "string"
+            },
+            "description": "start of time range in YYYY-MM-DDTHH:mm format",
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "end",
+            "schema": {
+              "type": "string"
+            },
+            "description": "end of time range in YYYY-MM-DDTHH:mm format",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response containing timeseries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessTimeseriesDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON response containing invalid request message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequestResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JSON response containing unauthorized message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "JSON response containing forbidden message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "JSON response containing internal server error message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/texas-real-foods/data/static/{businessId}": {
+      "get": {
+        "summary": "API route used to retrieve current business information entries",
+        "tags": [
+          "Business API"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-ApiKey",
+            "schema": {
+              "type": "string"
+            },
+            "description": "API Access Key",
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "businessId",
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID of business",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON response containing success message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessStaticDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "JSON response containing invalid request message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequestResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "JSON response containing unauthorized message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "JSON response containing forbidden message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "JSON response containing internal server error message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalServerErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1459,6 +1732,132 @@
           "message": {
             "type": "string",
             "example": "Successfully updated business"
+          }
+        }
+      },
+      "BusinessDeletedResponse": {
+        "properties": {
+          "http_code": {
+            "type": "integer",
+            "example": 200
+          },
+          "message": {
+            "type": "string",
+            "example": "Successfully delete business"
+          }
+        }
+      },
+      "BusinessStaticDataResponse": {
+        "properties": {
+          "http_code": {
+            "type": "integer",
+            "example": 200
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "example": "example-source"
+                },
+                "event_timestamp": {
+                  "type": "string",
+                  "example": "2021-01-01T09:56"
+                },
+                "website_live": {
+                  "type": "boolean",
+                  "example": true
+                },
+                "business_phones": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "example": "202-555-0133"
+                  }
+                },
+                "business_open": {
+                  "type": "boolean",
+                  "example": true
+                }
+              }
+            }
+          }
+        }
+      },
+      "BusinessTimeseriesDataResponse": {
+        "properties": {
+          "http_code": {
+            "type": "integer",
+            "example": 200
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "example-source-1": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "source": {
+                      "type": "string",
+                      "example": "example-source-1"
+                    },
+                    "event_timestamp": {
+                      "type": "string",
+                      "example": "2021-01-01T09:56"
+                    },
+                    "website_live": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "business_phones": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "example": "202-555-0133"
+                      }
+                    },
+                    "business_open": {
+                      "type": "boolean",
+                      "example": true
+                    }
+                  }
+                }
+              },
+              "example-source-2": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "source": {
+                      "type": "string",
+                      "example": "example-source-2"
+                    },
+                    "event_timestamp": {
+                      "type": "string",
+                      "example": "2021-01-01T09:56"
+                    },
+                    "website_live": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "business_phones": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "example": "202-555-0133"
+                      }
+                    },
+                    "business_open": {
+                      "type": "boolean",
+                      "example": true
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }

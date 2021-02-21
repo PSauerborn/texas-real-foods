@@ -3,6 +3,7 @@ services:
 
   utils-api:
     build: ./python
+    restart: unless-stopped
     container_name: texas-real-foods-utils-api
     networks:
     - core
@@ -12,6 +13,7 @@ services:
     build:
       context: ./go
       dockerfile: cmd/api/Dockerfile
+    restart: unless-stopped
     container_name: texas-real-foods-api
     networks:
     - core
@@ -24,6 +26,7 @@ services:
     build:
       context: ./go
       dockerfile: cmd/load-balancer/Dockerfile
+    restart: unless-stopped
     container_name: texas-real-foods-api-load-balancer
     networks:
     - core
@@ -33,6 +36,7 @@ services:
     build:
       context: ./go
       dockerfile: cmd/api/Dockerfile
+    restart: unless-stopped
     container_name: texas-real-foods-api-1
     networks:
     - core
@@ -45,6 +49,7 @@ services:
     build:
       context: ./go
       dockerfile: cmd/api/Dockerfile
+    restart: unless-stopped
     container_name: texas-real-foods-api-2
     networks:
     - core
@@ -57,6 +62,7 @@ services:
     build:
       context: ./go
       dockerfile: cmd/api/Dockerfile
+    restart: unless-stopped
     container_name: texas-real-foods-api-3
     networks:
     - core
@@ -69,6 +75,7 @@ services:
     build:
       context: ./go
       dockerfile: cmd/authenticator/Dockerfile
+    restart: unless-stopped
     container_name: texas-real-foods-authenticator
     networks:
     - core
@@ -81,6 +88,7 @@ services:
     build:
       context: ./go
       dockerfile: cmd/router/Dockerfile
+    restart: unless-stopped
     container_name: texas-real-foods-router
     networks:
     - core
@@ -91,6 +99,7 @@ services:
     build:
       context: ./go
       dockerfile: cmd/auto-updater/scraper/Dockerfile
+    restart: unless-stopped
     container_name: texas-real-foods-updater-web
     networks:
     - core
@@ -103,6 +112,7 @@ services:
     build:
       context: ./go
       dockerfile: cmd/auto-updater/yelp/Dockerfile
+    restart: unless-stopped
     container_name: texas-real-foods-updater-yelp
     networks:
     - core
@@ -127,6 +137,7 @@ services:
     build:
       context: ./go
       dockerfile: cmd/syncer/Dockerfile
+    restart: unless-stopped
     container_name: texas-real-foods-syncer
     networks:
     - core
@@ -139,6 +150,7 @@ services:
     build:
       context: ./go
       dockerfile: cmd/timeseries-analyser/Dockerfile
+    restart: unless-stopped
     container_name: texas-real-foods-analyser
     networks:
     - core
@@ -152,6 +164,7 @@ services:
     build:
       context: ./go
       dockerfile: cmd/mail-relay/Dockerfile
+    restart: unless-stopped
     container_name: texas-real-foods-mail-relay
     networks:
     - core
@@ -163,6 +176,7 @@ services:
   api-documentation:
     build:
       context: ./docs/openapi
+    restart: unless-stopped
     container_name: trf-api-documentation
     networks:
     - core
@@ -173,6 +187,7 @@ services:
   hermes-server:
     build:
       context: ./go/cmd/hermes
+    restart: unless-stopped
     container_name: texas-real-foods-hermes
     expose:
     - 7789/udp
