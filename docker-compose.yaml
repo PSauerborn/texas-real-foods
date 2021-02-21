@@ -20,6 +20,51 @@ services:
     env_file:
     - go/cmd/api/.env
 
+  load-balancer:
+    build:
+      context: ./go
+      dockerfile: cmd/load-balancer/Dockerfile
+    container_name: texas-real-foods-api-load-balancer
+    networks:
+    - core
+    - texas-real-foods
+
+  api-backend-replica-1:
+    build:
+      context: ./go
+      dockerfile: cmd/api/Dockerfile
+    container_name: texas-real-foods-api-1
+    networks:
+    - core
+    - postgres
+    - texas-real-foods
+    env_file:
+    - go/cmd/api/.env
+
+  api-backend-replica-2:
+    build:
+      context: ./go
+      dockerfile: cmd/api/Dockerfile
+    container_name: texas-real-foods-api-2
+    networks:
+    - core
+    - postgres
+    - texas-real-foods
+    env_file:
+    - go/cmd/api/.env
+
+  api-backend-replica-3:
+    build:
+      context: ./go
+      dockerfile: cmd/api/Dockerfile
+    container_name: texas-real-foods-api-3
+    networks:
+    - core
+    - postgres
+    - texas-real-foods
+    env_file:
+    - go/cmd/api/.env
+
   authenticator:
     build:
       context: ./go
