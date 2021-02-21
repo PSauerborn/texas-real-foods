@@ -1,28 +1,175 @@
 package timeseries_analyser
 
 import (
-	"fmt"
-	"time"
+    "fmt"
+    "time"
+    "sync"
 
-	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
+    "github.com/google/uuid"
+    log "github.com/sirupsen/logrus"
 
-	"texas_real_foods/pkg/notifications"
-	"texas_real_foods/pkg/utils"
+    "texas_real_foods/pkg/notifications"
+    "texas_real_foods/pkg/utils"
+    api "texas_real_foods/pkg/utils/api_accessors"
+    "texas_real_foods/pkg/connectors"
 )
 
-
 type TimeseriesAnalyser struct {
-	DataAPIUrl  string
-	Notifications notifications.NotificationEngine
+    TRFAPIConfig  utils.APIDependencyConfig
+    Notifications notifications.NotificationEngine
+    AnalysisIntervalMinutes int
 }
 
-func NewAnalyser(dataApiUrl string,
-	notifications notifications.NotificationEngine) *TimeseriesAnalyser {
-	return &TimeseriesAnalyser{
-		DataAPIUrl: dataApiUrl,
-		Notifications: notifications,
-	}
+func NewAnalyser(apiConfig utils.APIDependencyConfig,
+    notifications notifications.NotificationEngine,
+    interval int) *TimeseriesAnalyser {
+    return &TimeseriesAnalyser{
+        TRFAPIConfig: apiConfig,
+        Notifications: notifications,
+        AnalysisIntervalMinutes: interval,
+    }
+}
+
+// function used to retrieve business metadata for all stored
+// businesses
+func(analyser *TimeseriesAnalyser) GetCurrentBusinesses(config utils.APIDependencyConfig) ([]connectors.BusinessMetadata, error) {
+    // establish new connection to postgres persistence
+    access := api.NewTRFApiAccessorFromConfig(config)
+    payload, err := access.GetBusinesses()
+    if err != nil {
+        log.Error(fmt.Errorf("unable to retrieve businesses from API: %+v", err))
+        return payload.Data, err
+    }
+    return payload.Data, nil
+}
+
+// function used to retrieve business metadata for all stored
+// businesses
+func(analyser *TimeseriesAnalyser) GetTimeseriesData(config utils.APIDependencyConfig,
+    businessId uuid.UUID, start, end time.Time) (map[string][]api.TimeseriesDataEntry, error) {
+    // establish new connection to postgres persistence
+    access := api.NewTRFApiAccessorFromConfig(config)
+    payload, err := access.GetTimeseriesData(businessId, start, end)
+    if err != nil {
+        log.Error(fmt.Errorf("unable to retrieve businesses from API: %+v", err))
+        return payload.Data, err
+    }
+    return payload.Data, nil
+}
+
+// function used to analyse business data with a given
+// business ID, start and end timestamps
+func(analyser *TimeseriesAnalyser) AnalyseBusinessData(business connectors.BusinessMetadata,
+    start, end time.Time) error {
+
+    // get timeseries data from texas real foods API
+    data, err := analyser.GetTimeseriesData(analyser.TRFAPIConfig,
+        business.BusinessId, start, end)
+    if err != nil {
+        log.Error(fmt.Errorf("unable to retrieve timeseries data for business %s: %+v",
+            business.BusinessId, err))
+        return err
+    }
+
+    notify := []notifications.ChangeNotification{}
+    // iterate over source data and compare values
+    for source, values := range(data) {
+        log.Debug(fmt.Sprintf("analysing source %s with values %+v", source, values))
+        for i, entry := range(values) {
+            if i == 0 {
+                continue
+            }
+            // compare timeseries entry to previous entry
+            if timeSeriesEntriesDiffer(entry, values[i - 1]) {
+                log.Info(fmt.Sprintf("found differences in timeseries entries for %+v:%s",
+                    business.BusinessName, source))
+                // add new notification for batch
+                notificationString := fmt.Sprintf("found change in timeseries for %s:%s",
+                    business.BusinessName, source)
+                notification := notifications.ChangeNotification{
+                    BusinessId: business.BusinessId,
+                    BusinessName: business.BusinessName,
+                    EventTimestamp: time.Now(),
+                    Notification: notificationString,
+                    NotificationHash: time.Now().Format("01-02-2006"),
+                }
+                notify = append(notify, notification)
+                break
+            }
+        }
+    }
+
+    for _, msg := range(notify) {
+        // send notification for business change
+        if err := analyser.Notifications.SendNotification(msg); err != nil {
+            log.Error(fmt.Errorf("unable to send new notification: %+v", err))
+        }
+    }
+    return nil
+}
+
+// function to retrieve analysis timewindow based on current
+// timestamp and collection interface specified in connector
+func(analyser *TimeseriesAnalyser) GetAnalysisWindow() (time.Time, time.Time) {
+    now := time.Now().Round(time.Minute * 1)
+    start := now.Add(time.Minute * time.Duration(-analyser.AnalysisIntervalMinutes))
+    return start, now
+}
+
+// function used to analyse timeseries data
+func(analyser *TimeseriesAnalyser) Analyse() error {
+    start, end := analyser.GetAnalysisWindow()
+    // retrieve list of current businesses from API
+    businesses, err := analyser.GetCurrentBusinesses(analyser.TRFAPIConfig)
+    if err != nil {
+        log.Error(fmt.Errorf("unable to retreive businesses from API: %+v", err))
+        return err
+    }
+
+    // iterate over businesses and analyse timeseries data for each
+    for _, business := range(businesses) {
+        if err := analyser.AnalyseBusinessData(business, start, end); err != nil {
+            log.Error(fmt.Errorf("unable to analyse business data for %s: %+v", business.BusinessName, err))
+            continue
+        }
+    }
+    return nil
+}
+
+// function used to start new instance of timeseries analysis engine
+func(analyser *TimeseriesAnalyser) Run() {
+    log.Info(fmt.Sprintf("starting new timeseries analyzer with analysis interval %d",
+        analyser.AnalysisIntervalMinutes))
+    // generate ticker and channel for messages
+    ticker := time.NewTicker(time.Duration(analyser.AnalysisIntervalMinutes) * time.Minute)
+    quitChan := make(chan bool)
+
+    var wg sync.WaitGroup
+    // add to waitgroup to prevent go routine from closing
+    wg.Add(1)
+
+    go func() {
+        for {
+            select {
+            case <- ticker.C:
+                log.Info("starting new analysis job...")
+                start := time.Now()
+                if err := analyser.Analyse(); err != nil {
+                    log.Error(fmt.Errorf("unable to analyse data: %+v", err))
+                }
+                elapsed := time.Now().Sub(start)
+                log.Info(fmt.Sprintf("finished analysis job. took %fs to process", elapsed.Seconds()))
+            case <- quitChan:
+                // stop ticker and add to waitgroup
+                ticker.Stop()
+                wg.Done()
+                return
+            }
+        }
+    }()
+
+    wg.Wait()
+    log.Info("stopping timeseries analyser...")
 }
 
 

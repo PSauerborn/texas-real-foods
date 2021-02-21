@@ -46,7 +46,8 @@ func(db *Persistence) CreateNotification(payload ChangeNotification) error {
     notificationId := uuid.New()
 
     query := `INSERT INTO notifications(notification_id,notification,hash) VALUES($1,$2,$3)`
-    _, err := db.Session.Exec(context.Background(), query, notificationId, payloadJson, payload.JSONHash)
+    _, err := db.Session.Exec(context.Background(), query, notificationId, payloadJson,
+        payload.NotificationHash)
     return err
 }
 

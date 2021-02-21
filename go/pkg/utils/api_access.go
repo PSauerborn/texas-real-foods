@@ -33,6 +33,14 @@ type BaseAPIAccessor struct {
     Protocol string
 }
 
+func NewAPIAccessorFromConfig(config APIDependencyConfig) *BaseAPIAccessor {
+    return &BaseAPIAccessor{
+        Host: config.Host,
+        Port: config.Port,
+        Protocol: config.Protocol,
+    }
+}
+
 // function used to execute a given request
 func(accessor *BaseAPIAccessor) ExecuteRequest(request *http.Request) (*http.Response, error) {
     // generate new HTTP client and execute request

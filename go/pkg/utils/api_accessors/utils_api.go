@@ -12,7 +12,7 @@ import (
 
 
 type UtilsAPIAccessor struct {
-    utils.BaseAPIAccessor
+    *utils.BaseAPIAccessor
 }
 
 func NewUtilsAPIAccessor(host, protocol string, port *int) *UtilsAPIAccessor {
@@ -21,6 +21,14 @@ func NewUtilsAPIAccessor(host, protocol string, port *int) *UtilsAPIAccessor {
         Port: port,
         Protocol: protocol,
     }
+    return &UtilsAPIAccessor{
+        &baseAccessor,
+    }
+}
+
+// function to generate new API accessor for Texas Real Foods API
+func NewUtilsAPIAccessorFromConfig(config utils.APIDependencyConfig) *UtilsAPIAccessor {
+    baseAccessor := utils.NewAPIAccessorFromConfig(config)
     return &UtilsAPIAccessor{
         baseAccessor,
     }

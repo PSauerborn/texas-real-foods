@@ -91,6 +91,7 @@ func(updater *AutoUpdater) Run() {
             select {
             case <- ticker.C:
                 log.Info("starting new collection job...")
+                start := time.Now()
                 // retrieve current list of businesses
                 currentBusinesses, err := updater.GetCurrentBusinesses(updater.TRFApiConfig.Host,
                     updater.TRFApiConfig.Port)
@@ -113,7 +114,9 @@ func(updater *AutoUpdater) Run() {
                 } else {
                     log.Info("no changes in business data detected. sleeping...")
                 }
-
+                // log total time elapsed to process job
+                elapsed := time.Now().Sub(start)
+                log.Info(fmt.Sprintf("finished update job. took %fs to process", elapsed.Seconds()))
             case <- quitChan:
                 // stop ticker and add to waitgroup
                 ticker.Stop()

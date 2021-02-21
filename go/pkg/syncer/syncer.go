@@ -131,7 +131,7 @@ func(syncer *Syncer) SendNotification(message, hashed string,
         BusinessId: business.BusinessId,
         BusinessName: business.BusinessName,
         EventTimestamp: time.Now(),
-        JSONHash: hashed,
+        NotificationHash: hashed,
         Notification: message,
     }
     return syncer.Notifications.SendNotification(payload)
@@ -152,11 +152,13 @@ func(syncer *Syncer) Run() {
         for {
             select {
             case <- ticker.C:
+                start := time.Now()
                 log.Info("starting new sync job...")
                 if err := syncer.SyncData(); err != nil {
                     log.Error(fmt.Errorf("unable to sync data: %+v", err))
                 }
-
+                elapsed := time.Now().Sub(start)
+                log.Info(fmt.Sprintf("finished sync job. took %fs to process", elapsed.Seconds()))
             case <- quitChan:
                 // stop ticker and add to waitgroup
                 ticker.Stop()

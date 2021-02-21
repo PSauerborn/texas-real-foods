@@ -28,6 +28,14 @@ func NewTRFApiAccessor(host, protocol string, port *int) *TexasRealFoodsAPIAcces
     }
 }
 
+// function to generate new API accessor for Texas Real Foods API
+func NewTRFApiAccessorFromConfig(config utils.APIDependencyConfig) *TexasRealFoodsAPIAccessor {
+    baseAccessor := utils.NewAPIAccessorFromConfig(config)
+    return &TexasRealFoodsAPIAccessor{
+        baseAccessor,
+    }
+}
+
 type ListBusinessResponse struct {
     HTTPCode int 			               `json:"http_code"`
     Data     []connectors.BusinessMetadata `json:"data"`
@@ -87,8 +95,12 @@ func(accessor *TexasRealFoodsAPIAccessor) GetTimeseriesData(businessId uuid.UUID
     log.Debug(fmt.Sprintf("fetching timeseries data for business %s in range %s - %s...",
         businessId, start, end))
 
+    // format timestamps to match required datetime format
+    startTs := start.Format("2006-01-02T15:04")
+    endTs := end.Format("2006-01-02T15:04")
+    // construct URL using parameters
     url := accessor.FormatURL(fmt.Sprintf("texas-real-foods/data/timeseries/%s/%s/%s",
-        businessId, start, end))
+        businessId, startTs, endTs))
 
     var response TimeseriesResponse
     // generate new JSON request and execute

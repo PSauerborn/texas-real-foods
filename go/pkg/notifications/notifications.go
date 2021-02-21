@@ -16,11 +16,11 @@ var (
 
 
 type ChangeNotification struct{
-    BusinessId     uuid.UUID `json:"business_id"`
-    BusinessName   string    `json:"business_name"`
-    EventTimestamp time.Time `json:"event_timestamp"`
-    Notification   string    `json:"notification"`
-    JSONHash       string    `json:"json_hash"`
+    BusinessId       uuid.UUID `json:"business_id"`
+    BusinessName     string    `json:"business_name"`
+    EventTimestamp   time.Time `json:"event_timestamp"`
+    Notification     string    `json:"notification"`
+    NotificationHash string    `json:"notification_hash"`
 }
 
 // define interface for engine
@@ -47,7 +47,7 @@ func(e *DefaultNotificationEngine) SendNotification(notification ChangeNotificat
     defer conn.Close(context.Background())
 
     // check if notification hash already exists to prevent duplicate notifications
-    exists, err := db.NotificationHashExists(notification.JSONHash)
+    exists, err := db.NotificationHashExists(notification.NotificationHash)
     if err != nil {
         log.Error(fmt.Errorf("unable to verify notification hash: %+v", err))
         return err
