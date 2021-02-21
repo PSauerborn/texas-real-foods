@@ -2,11 +2,13 @@ package timeseries_analyser
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 
 	"texas_real_foods/pkg/notifications"
+	"texas_real_foods/pkg/utils"
 )
 
 
@@ -23,7 +25,4 @@ func NewAnalyser(dataApiUrl string,
 	}
 }
 
-// function to retrieve timeseries data from API
-func(analyser *TimeseriesAnalyser) GetTimeseriesData(businessId uuid.UUID) {
-	log.Debug(fmt.Sprintf("retrieving timeseries data for business %s", businessId))
-}
+

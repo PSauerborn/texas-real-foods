@@ -11,6 +11,7 @@ import (
 
     "texas_real_foods/pkg/connectors"
     "texas_real_foods/pkg/utils"
+    api "texas_real_foods/pkg/utils/api_accessors"
 )
 
 var (
@@ -25,13 +26,13 @@ var (
 // that each instance of the WebConnector is created with a
 // Phone Validation API host, which is used to validate phone
 // numbers scraped from a site(s)
-func NewWebConnector(phoneApiHost string) *WebConnector {
-    return &WebConnector{phoneApiHost}
+func NewWebConnector(apiConfig utils.APIDependencyConfig) *WebConnector {
+    return &WebConnector{apiConfig}
 }
 
 // struct used to store
 type WebConnector struct{
-    PhoneValidationAPIHost string
+    UtilsAPIConfig utils.APIDependencyConfig
 }
 
 // function used to scrape sites for updated asset
@@ -147,7 +148,11 @@ func(connector *WebConnector) ParseSiteData(business connectors.BusinessMetadata
     log.Info(fmt.Sprintf("received and parsing %d bytes of data", len(data)))
     // parse site data for phone numbers by using regex expressions
     phones := utils.GetPhoneNumbersByRegex(string(data))
-    results, err := utils.ValidatePhoneNumbers(connector.PhoneValidationAPIHost, phones)
+
+    // create new accessor for utils API and validate phone numbers
+    access := api.NewUtilsAPIAccessor(connector.UtilsAPIConfig.Host, "http",
+        connector.UtilsAPIConfig.Port)
+    results, err := access.ValidatePhoneNumbers(phones)
     if err != nil {
         log.Error(fmt.Errorf("unable to verify phone numbers with API: %+v", err))
         return connectors.BusinessData{}, err

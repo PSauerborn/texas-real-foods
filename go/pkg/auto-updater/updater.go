@@ -8,6 +8,8 @@ import (
     log "github.com/sirupsen/logrus"
 
     "texas_real_foods/pkg/connectors"
+    "texas_real_foods/pkg/utils"
+    api "texas_real_foods/pkg/utils/api_accessors"
 )
 
 var (
@@ -20,12 +22,12 @@ var (
 // interface implementation, which is used to collect data from
 // a particular data source (yelp, google, website etc)
 func New(connector connectors.AutoUpdateDataConnector, collectionPeriod int,
-    postgresUrl, baseApiUrl string) *AutoUpdater {
+    postgresUrl string, apiConfig utils.APIDependencyConfig) *AutoUpdater {
     return &AutoUpdater{
         PostgresURL: postgresUrl,
         DataConnector: connector,
         CollectionPeriodMinutes: collectionPeriod,
-        BaseAPIUrl: baseApiUrl,
+        TRFApiConfig: apiConfig,
     }
 }
 
@@ -33,19 +35,20 @@ func New(connector connectors.AutoUpdateDataConnector, collectionPeriod int,
 // instance has a separate data connector and notification engine
 type AutoUpdater struct{
     PostgresURL             string
-    BaseAPIUrl              string
     CollectionPeriodMinutes int
+    TRFApiConfig            utils.APIDependencyConfig
     DataConnector           connectors.AutoUpdateDataConnector
 }
 
 // function used to retrieve business metadata for all stored
 // businesses
-func(updater *AutoUpdater) GetCurrentBusinesses() ([]connectors.BusinessMetadata, error) {
+func(updater *AutoUpdater) GetCurrentBusinesses(host string, port *int) ([]connectors.BusinessMetadata, error) {
     // establish new connection to postgres persistence
-    payload, err := GetBusinessesFromAPI(updater.BaseAPIUrl)
+    access := api.NewTRFApiAccessor(host, "http", port)
+    payload, err := access.GetBusinesses()
     if err != nil {
         log.Error(fmt.Errorf("unable to retrieve businesses from API: %+v", err))
-        return []connectors.BusinessMetadata{}, err
+        return payload.Data, err
     }
     return payload.Data, nil
 }
@@ -89,7 +92,8 @@ func(updater *AutoUpdater) Run() {
             case <- ticker.C:
                 log.Info("starting new collection job...")
                 // retrieve current list of businesses
-                currentBusinesses, err := updater.GetCurrentBusinesses()
+                currentBusinesses, err := updater.GetCurrentBusinesses(updater.TRFApiConfig.Host,
+                    updater.TRFApiConfig.Port)
                 if err != nil {
                     log.Error(fmt.Errorf("unable to retrieve existing businesses: %+v", err))
                     continue

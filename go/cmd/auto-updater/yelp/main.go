@@ -19,10 +19,24 @@ var (
             "collection_interval_minutes": "1",
             "yelp_base_api": "https://api.yelp.com/v3/businesses",
             "yelp_api_key": "",
-            "base_api_url": "http://0.0.0.0:10999/texas-real-foods",
+            "trf_api_host": "0.0.0.0",
+            "trf_api_port": "10999",
         },
     )
 )
+
+func getTRFAPIConfig() utils.APIDependencyConfig {
+    // get configuration for downstream API dependencies and convert to integer
+    apiPortString := cfg.Get("trf_api_port")
+    apiPort, err := strconv.Atoi(apiPortString)
+    if err != nil {
+        panic(fmt.Sprintf("received invalid api port for trf API '%s'", apiPortString))
+    }
+    return utils.APIDependencyConfig{
+        Host: cfg.Get("trf_api_host"),
+        Port: &apiPort,
+    }
+}
 
 func main() {
     log.SetLevel(log.DebugLevel)
@@ -37,7 +51,8 @@ func main() {
     if err != nil {
         panic(fmt.Sprintf("received invalid collection interval '%s'", intervalString))
     }
+
     // create new updater with data connector and run
     updater.New(connector, interval, cfg.Get("postgres_url"),
-        cfg.Get("base_api_url")).Run()
+        getTRFAPIConfig()).Run()
 }
