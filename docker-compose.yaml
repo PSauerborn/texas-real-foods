@@ -90,6 +90,19 @@ services:
     env_file:
     - go/cmd/syncer/.env
 
+  analyser:
+    build:
+      context: ./go
+      dockerfile: cmd/timeseries-analyser/Dockerfile
+    container_name: texas-real-foods-analyser
+    networks:
+    - core
+    - postgres
+    - texas-real-foods
+    env_file:
+    - go/cmd/timeseries-analyser/.env
+
+
   mail-relay:
     build:
       context: ./go
