@@ -31,6 +31,7 @@ func getTRFAPIConfig() utils.APIDependencyConfig {
     return utils.APIDependencyConfig{
         Host: cfg.Get("trf_api_host"),
         Port: &apiPort,
+        Protocol: "http",
     }
 }
 

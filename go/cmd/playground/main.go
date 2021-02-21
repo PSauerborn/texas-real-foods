@@ -1,6 +1,9 @@
 package main
 
 import (
+	"time"
+
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 
 	"texas_real_foods/pkg/utils/api_accessors"
@@ -9,6 +12,10 @@ import (
 func main() {
 	log.SetLevel(log.DebugLevel)
 
-	access := utils.NewTRFApiAccessor("trf.project-gateway.app/api", "https", nil)
-	log.Info(access.GetBusinesses())
+	port := 10999
+	access := utils.NewTRFApiAccessor("0.0.0.0", "http", &port)
+
+	businessId, _ := uuid.Parse("9a2cae53-1104-4688-b3d9-53953f23f003")
+	now := time.Now()
+	log.Info(access.GetTimeseriesData(businessId, now, now.Add(time.Duration(15) * time.Minute)))
 }
