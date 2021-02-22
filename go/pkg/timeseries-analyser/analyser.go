@@ -32,7 +32,8 @@ func NewAnalyser(apiConfig utils.APIDependencyConfig,
 
 // function used to retrieve business metadata for all stored
 // businesses
-func(analyser *TimeseriesAnalyser) GetCurrentBusinesses(config utils.APIDependencyConfig) ([]connectors.BusinessMetadata, error) {
+func(analyser *TimeseriesAnalyser) GetCurrentBusinesses(config utils.APIDependencyConfig) (
+    []connectors.BusinessMetadata, error) {
     // establish new connection to postgres persistence
     access := api.NewTRFApiAccessorFromConfig(config)
     payload, err := access.GetBusinesses()
@@ -83,15 +84,17 @@ func(analyser *TimeseriesAnalyser) AnalyseBusinessData(business connectors.Busin
             if timeSeriesEntriesDiffer(entry, values[i - 1]) {
                 log.Info(fmt.Sprintf("found differences in timeseries entries for %+v:%s",
                     business.BusinessName, source))
-                // add new notification for batch
+                // generate notification message and hash
                 notificationString := fmt.Sprintf("found change in timeseries for %s:%s",
                     business.BusinessName, source)
+
+                // generate new notification
                 notification := notifications.ChangeNotification{
                     BusinessId: business.BusinessId,
                     BusinessName: business.BusinessName,
                     EventTimestamp: time.Now(),
                     Notification: notificationString,
-                    NotificationHash: time.Now().Format("01-02-2006"),
+                    NotificationHash: generateNotificationHash(business.BusinessId, source),
                 }
                 notify = append(notify, notification)
                 break

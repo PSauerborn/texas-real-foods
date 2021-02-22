@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
+    log "github.com/sirupsen/logrus"
+
 	"texas_real_foods/pkg/timeseries-analyser"
 	"texas_real_foods/pkg/notifications"
 	"texas_real_foods/pkg/utils"
@@ -36,6 +38,8 @@ func getTRFAPIConfig() utils.APIDependencyConfig {
 }
 
 func main() {
+    log.SetLevel(log.DebugLevel)
+
 	intervalString := cfg.Get("analysis_interval_minutes")
     // convert given interval from string to integer
     interval, err := strconv.Atoi(intervalString)

@@ -50,10 +50,13 @@ func New() *gin.Engine {
     router.POST("/texas-real-foods/business", PostgresSessionMiddleware(), addNewBusinessHandler)
 
     // add routes to modify businesses
-    router.PATCH("/texas-real-foods/business/info/:businessId", PostgresSessionMiddleware(), updateBusinessHandler)
-    router.PATCH("/texas-real-foods/business/meta/:businessId", PostgresSessionMiddleware(), updateBusinessMetaHandler)
+    router.PATCH("/texas-real-foods/business/info/:businessId", PostgresSessionMiddleware(),
+        updateBusinessHandler)
+    router.PATCH("/texas-real-foods/business/meta/:businessId", PostgresSessionMiddleware(),
+        updateBusinessMetaHandler)
 
-    router.DELETE("/texas-real-foods/business/:businessId", PostgresSessionMiddleware(), deleteBusinessHandler)
+    router.DELETE("/texas-real-foods/business/:businessId", PostgresSessionMiddleware(),
+        deleteBusinessHandler)
     return router
 }
 
@@ -160,6 +163,9 @@ func updateBusinessHandler(ctx *gin.Context) {
         gin.H{"http_code": http.StatusOK, "message": "Successfully updated business"})
 }
 
+// API handler used to update business metadata. metadata are
+// updated via JSON patch operations performed in sequence on
+// instance
 func updateBusinessMetaHandler(ctx *gin.Context) {
     log.Info("received request to update business metadata")
     var request BusinessMetaPatchRequest
@@ -223,6 +229,7 @@ func updateBusinessMetaHandler(ctx *gin.Context) {
         gin.H{"http_code": http.StatusOK, "message": "Successfully updated business"})
 }
 
+// API handler used to delete a business from the database
 func deleteBusinessHandler(ctx *gin.Context) {
     log.Info("received request to delete business")
     // retrieve business ID from parameters
@@ -259,7 +266,7 @@ func deleteBusinessHandler(ctx *gin.Context) {
         gin.H{"http_code": http.StatusOK, "message": "Successfully deleted business"})
 }
 
-// function used to retrieve static data for a given business
+// PI handler to retrieve static data from database
 func getStaticDataHandler(ctx *gin.Context) {
     log.Info(fmt.Sprintf("received request to retrieve static data for business %s", ctx.Param("businessId")))
     // retrieve business ID from parameters and convert to uuid

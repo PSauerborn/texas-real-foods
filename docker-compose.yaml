@@ -133,18 +133,18 @@ services:
   #   env_file:
   #   - go/cmd/auto-updater/google/.env
 
-  syncer:
-    build:
-      context: ./go
-      dockerfile: cmd/syncer/Dockerfile
-    restart: unless-stopped
-    container_name: texas-real-foods-syncer
-    networks:
-    - core
-    - postgres
-    - texas-real-foods
-    env_file:
-    - go/cmd/syncer/.env
+  # syncer:
+  #   build:
+  #     context: ./go
+  #     dockerfile: cmd/syncer/Dockerfile
+  #   restart: unless-stopped
+  #   container_name: texas-real-foods-syncer
+  #   networks:
+  #   - core
+  #   - postgres
+  #   - texas-real-foods
+  #   env_file:
+  #   - go/cmd/syncer/.env
 
   analyser:
     build:
