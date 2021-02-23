@@ -16,16 +16,16 @@ import (
 
 type TimeseriesAnalyser struct {
     TRFAPIConfig  utils.APIDependencyConfig
-    Notifications notifications.NotificationEngine
+    NotifyAPIConfig  utils.APIDependencyConfig
     AnalysisIntervalMinutes int
 }
 
 func NewAnalyser(apiConfig utils.APIDependencyConfig,
-    notifications notifications.NotificationEngine,
+    notifyApiConfig utils.APIDependencyConfig,
     interval int) *TimeseriesAnalyser {
     return &TimeseriesAnalyser{
         TRFAPIConfig: apiConfig,
-        Notifications: notifications,
+        NotifyAPIConfig: notifyApiConfig,
         AnalysisIntervalMinutes: interval,
     }
 }
@@ -50,7 +50,7 @@ func(analyser *TimeseriesAnalyser) GetTimeseriesData(config utils.APIDependencyC
     businessId uuid.UUID, start, end time.Time) (map[string][]api.TimeseriesDataEntry, error) {
     // establish new connection to postgres persistence
     access := api.NewTRFApiAccessorFromConfig(config)
-    payload, err := access.GetTimeseriesData(businessId, start, end)
+    payload, err := access.GetTimeseriesDataCounted(businessId, 5)
     if err != nil {
         log.Error(fmt.Errorf("unable to retrieve businesses from API: %+v", err))
         return payload.Data, err
@@ -102,9 +102,10 @@ func(analyser *TimeseriesAnalyser) AnalyseBusinessData(business connectors.Busin
         }
     }
 
+    accessor := api.NewNotificationsApiAccessorFromConfig(analyser.NotifyAPIConfig)
     for _, msg := range(notify) {
         // send notification for business change
-        if err := analyser.Notifications.SendNotification(msg); err != nil {
+        if _, err := accessor.CreateNotification(msg); err != nil {
             log.Error(fmt.Errorf("unable to send new notification: %+v", err))
         }
     }

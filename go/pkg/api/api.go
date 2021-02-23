@@ -4,6 +4,7 @@ import (
     "fmt"
     "net/http"
     "errors"
+    "strconv"
 
     "github.com/gin-gonic/gin"
     "github.com/gin-contrib/cors"
@@ -38,11 +39,11 @@ func New() *gin.Engine {
     // add route to retrieve businesses
     router.GET("/texas-real-foods/businesses", PostgresSessionMiddleware(),
         getBusinessesHandler)
-    router.GET("/texas-real-foods/notifications", PostgresSessionMiddleware(),
-        getNotificationsHandler)
     // add routes to retrieve static and timeseries data
     router.GET("/texas-real-foods/data/static/:businessId", PostgresSessionMiddleware(),
         getStaticDataHandler)
+    router.GET("/texas-real-foods/data/timeseries-count/:businessId/:limit",
+        PostgresSessionMiddleware(), getTimeSeriesLimitedHandler)
     router.GET("/texas-real-foods/data/timeseries/:businessId/:start/:end",
         PostgresSessionMiddleware(), getTimeSeriesHandler)
 
@@ -74,24 +75,7 @@ func getBusinessesHandler(ctx *gin.Context) {
     }
     log.Info(fmt.Sprintf("retrieved %d entries from database", len(businesses)))
     ctx.JSON(http.StatusOK,
-        gin.H{"http_code": http.StatusOK, "data": businesses})
-}
-
-// API handler used to retrieve notifications
-func getNotificationsHandler(ctx *gin.Context) {
-    log.Info("received request to retrieve notifications")
-    // retrieve postgres persistence from contex and
-    db, _ := ctx.MustGet("persistence").(*Persistence)
-    notifications, err := db.GetNotifications()
-    if err != nil {
-        log.Error(fmt.Errorf("unable to retrieve notifications: %+v", err))
-        ctx.JSON(http.StatusInternalServerError,
-            gin.H{"http_code": http.StatusInternalServerError, "message": "Internal server error"})
-        return
-    }
-    log.Info(fmt.Sprintf("retrieved %d entries from database", len(notifications)))
-    ctx.JSON(http.StatusOK,
-        gin.H{"http_code": http.StatusOK, "data": notifications})
+        gin.H{"http_code": http.StatusOK, "count": len(businesses), "data": businesses})
 }
 
 // API handler used to add new business
@@ -345,6 +329,55 @@ func getTimeSeriesHandler(ctx *gin.Context) {
 
     // get statis business data from database and return
     data, err := db.GetTimeSeriesData(businessId, timeRange.Start, timeRange.End)
+    if err != nil {
+        log.Error(fmt.Errorf("unable to retrieve business data: %+v", err))
+        ctx.JSON(http.StatusInternalServerError,
+            gin.H{"http_code": http.StatusInternalServerError, "message": "Internal server error"})
+        return
+    }
+    ctx.JSON(http.StatusOK,
+        gin.H{"http_code": http.StatusOK, "data": GroupTimeseriesDataBySource(data)})
+}
+
+// API handler used to retrieve timeseries data from database for
+// a given business with business ID
+func getTimeSeriesLimitedHandler(ctx *gin.Context) {
+    log.Info(fmt.Sprintf("received request to retrieve timeseries data for business %s", ctx.Param("businessId")))
+    // retrieve business ID from parameters and convert to uuid
+    businessId, err := uuid.Parse(ctx.Param("businessId"))
+    if err != nil {
+        log.Error(fmt.Errorf("unable to parse parameter ID: %+v", err))
+        ctx.JSON(http.StatusBadRequest,
+            gin.H{"http_code": http.StatusBadRequest, "message": "Invalid business ID"})
+        return
+    }
+    // retrieve limit from request path
+    limit, err := strconv.Atoi(ctx.Param("limit"))
+    if err != nil {
+        log.Error(fmt.Errorf("unable to parse data limit: %+v", err))
+        ctx.JSON(http.StatusBadRequest,
+            gin.H{"http_code": http.StatusBadRequest, "message": "Invalid data limit"})
+        return
+    }
+
+    // retrieve persistence from context and check if business exists
+    db, _ := ctx.MustGet("persistence").(*Persistence)
+    _, err = db.GetBusinessById(businessId)
+    if err != nil {
+        switch err {
+        case ErrBusinessNotFound:
+            ctx.JSON(http.StatusNotFound,
+                gin.H{"http_code": http.StatusNotFound, "message": "Invalid business ID"})
+            return
+        default:
+            ctx.JSON(http.StatusInternalServerError,
+                gin.H{"http_code": http.StatusInternalServerError, "message": "Internal server error"})
+            return
+        }
+    }
+
+    // get statis business data from database and return
+    data, err := db.GetTimeSeriesDataLimited(businessId, limit)
     if err != nil {
         log.Error(fmt.Errorf("unable to retrieve business data: %+v", err))
         ctx.JSON(http.StatusInternalServerError,

@@ -3,7 +3,6 @@ package notifications
 import (
     "fmt"
     "time"
-    "context"
     "errors"
 
     "github.com/google/uuid"
@@ -16,15 +15,15 @@ var (
 
 
 type ChangeNotification struct{
-    BusinessId       uuid.UUID `json:"business_id"`
-    BusinessName     string    `json:"business_name"`
-    EventTimestamp   time.Time `json:"event_timestamp"`
-    Notification     string    `json:"notification"`
-    NotificationHash string    `json:"notification_hash"`
+    BusinessId       uuid.UUID `json:"business_id" binding:"required"`
+    BusinessName     string    `json:"business_name" binding:"required"`
+    EventTimestamp   time.Time `json:"event_timestamp" binding:"required"`
+    Notification     string    `json:"notification" binding:"required"`
+    NotificationHash string    `json:"notification_hash" binding:"required"`
 }
 
 // define interface for engine
-type NotificationEngine interface{
+type NotificationEngine interface {
     SendNotification(notification ChangeNotification) error
 }
 
@@ -32,7 +31,7 @@ func NewDefaultNotificationEngine(postgresUrl string) *DefaultNotificationEngine
     return &DefaultNotificationEngine{postgresUrl}
 }
 
-type DefaultNotificationEngine struct{
+type DefaultNotificationEngine struct {
     PostgresURL string
 }
 
@@ -44,7 +43,7 @@ func(e *DefaultNotificationEngine) SendNotification(notification ChangeNotificat
         log.Error(fmt.Errorf("unable to connect notification engine to postgres: %+v", err))
         return err
     }
-    defer conn.Close(context.Background())
+    defer conn.Close()
 
     // check if notification hash already exists to prevent duplicate notifications
     exists, err := db.NotificationHashExists(notification.NotificationHash)

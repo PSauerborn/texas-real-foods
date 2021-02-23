@@ -154,44 +154,6 @@ func(db *Persistence) DeleteBusiness(businessId uuid.UUID) error {
     return nil
 }
 
-// function to retreive notifications from database
-func(db *Persistence) GetNotifications() ([]Notification, error) {
-    log.Debug("retrieving notifications from database")
-
-    notifications := []Notification{}
-
-    query := `SELECT notification_id, event_timestamp, notification, hash
-    FROM notifications`
-    rows, err := db.Session.Query(context.Background(), query)
-    if err != nil {
-        switch err {
-        case pgx.ErrNoRows:
-            return notifications, nil
-        default:
-            return notifications, err
-        }
-    }
-
-    for rows.Next() {
-        var (notificationId uuid.UUID; eventTimestamp time.Time)
-        var (notification map[string]interface{}; hashed string)
-
-        if err := rows.Scan(&notificationId, &eventTimestamp,
-            &notification, &hashed); err != nil {
-            log.Warn(fmt.Errorf("unable to scan row into local variables: %+v", err))
-            continue
-        }
-
-        notifications = append(notifications, Notification{
-            NotificationId: notificationId,
-            EventTimestamp: eventTimestamp,
-            Notification: notification,
-            Hash: hashed,
-        })
-    }
-    return notifications, nil
-}
-
 // function to retrieve static data for a given business with business ID
 func(db *Persistence) GetStaticBusinessData(businessId uuid.UUID) ([]connectors.BusinessData, error) {
     log.Debug(fmt.Sprintf("retrieving static data for business %s", businessId))
@@ -261,4 +223,71 @@ func(db *Persistence) GetTimeSeriesData(businessId uuid.UUID, start,
         results = append(results, TimeSeriesData{ts, data})
     }
     return results, nil
+}
+
+// function to retrive timeseries data from limited to a number of
+// points
+func(db *Persistence) GetTimeSeriesDataLimited(businessId uuid.UUID, limit int) ([]TimeSeriesData, error) {
+    log.Debug(fmt.Sprintf("retrieving timeseries business data for business %s with limit %d",
+        businessId, limit))
+
+    results := []TimeSeriesData{}
+    sources, err := db.GetUniqueSources()
+    if err != nil {
+        log.Error(fmt.Errorf("unable to retrieve unique sources from database: %+v", err))
+        return results, err
+    }
+
+    query := `SELECT phone,website_live,open,source,event_timestamp
+        FROM asset_data_timeseries WHERE business_id=$1 AND source=$2
+        ORDER BY event_timestamp DESC LIMIT $3`
+
+    for _, source := range(sources) {
+        // query rows from postgres database
+        rows, err := db.Session.Query(context.Background(), query, businessId, source, limit)
+        if err != nil {
+            switch err {
+            case pgx.ErrNoRows:
+                return results, nil
+            default:
+                return results, err
+            }
+        }
+
+        for rows.Next() {
+            // scan data into local variables
+            var (data connectors.BusinessData; ts time.Time)
+            if err := rows.Scan(&data.BusinessPhones, &data.WebsiteLive, &data.BusinessOpen,
+                &data.Source, &ts); err != nil {
+                log.Warn(fmt.Errorf("unable to scan data into local variables: %+v", err))
+                continue
+            }
+            // adddata entry to results array
+            results = append(results, TimeSeriesData{ts, data})
+        }
+    }
+    return results, nil
+}
+
+// function used to retrieve unique sources from database
+func(db *Persistence) GetUniqueSources() ([]string, error) {
+    log.Debug("fetching unique sources from database...")
+
+    sources := []string{}
+
+    query := `SELECT DISTINCT source FROM asset_data_timeseries`
+    results, err := db.Session.Query(context.Background(), query)
+    if err != nil {
+        return sources, err
+    }
+
+    var source string
+    for results.Next() {
+        if err := results.Scan(&source); err != nil {
+            log.Warn(fmt.Errorf("unable to scan data into local variables: %+v", err))
+            continue
+        }
+        sources = append(sources, source)
+    }
+    return sources, nil
 }

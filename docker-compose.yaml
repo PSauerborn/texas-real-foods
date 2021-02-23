@@ -173,6 +173,19 @@ services:
     env_file:
     - go/cmd/mail-relay/.env
 
+  notifications-api:
+    build:
+      context: ./go
+      dockerfile: cmd/notifications/Dockerfile
+    restart: unless-stopped
+    container_name: texas-real-foods-notifications-api
+    networks:
+    - core
+    - postgres
+    - texas-real-foods
+    env_file:
+    - go/cmd/notifications/.env
+
   api-documentation:
     build:
       context: ./docs/openapi

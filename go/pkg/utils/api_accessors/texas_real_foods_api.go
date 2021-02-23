@@ -133,6 +133,49 @@ func(accessor *TexasRealFoodsAPIAccessor) GetTimeseriesData(businessId uuid.UUID
     }
 }
 
+// function to get timeseries data for a given business from
+// texas real foods API with a given business ID, start and
+// end time
+func(accessor *TexasRealFoodsAPIAccessor) GetTimeseriesDataCounted(businessId uuid.UUID,
+    count int) (TimeseriesResponse, error) {
+    log.Debug(fmt.Sprintf("fetching timeseries data for business %s with limit %d...",
+        businessId, count))
+
+    // construct URL using parameters
+    url := accessor.FormatURL(fmt.Sprintf("texas-real-foods/data/timeseries-count/%s/%d",
+        businessId, count))
+
+    var response TimeseriesResponse
+    // generate new JSON request and execute
+    req, err := accessor.NewJSONRequest("GET", url, nil, nil)
+    if err != nil {
+        log.Error(fmt.Errorf("unable to create request: %+v", err))
+        return response, err
+    }
+    resp, err := accessor.ExecuteRequest(req)
+    if err != nil {
+        log.Error(fmt.Errorf("unable to execute API request: %+v", err))
+        return response, err
+    }
+    defer resp.Body.Close()
+
+    // handle response based on code
+    switch resp.StatusCode {
+    case 200:
+        log.Debug(fmt.Sprintf("successfully retrieved timeseries data from API"))
+        // decode JSON response from API and return
+        if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+            log.Error(fmt.Errorf("unable to parse JSON response from API: %+v", err))
+            return response, err
+        }
+        return response, nil
+    default:
+        log.Error(fmt.Sprintf("failed to retrieve timeseries data: received invalid %d response from API",
+            resp.StatusCode))
+        return response, utils.ErrInvalidAPIResponse
+    }
+}
+
 type StaticDataResponse struct {
     HTTPCode int 					   `json:"http_code"`
     Data     []connectors.BusinessData `json:"data"`

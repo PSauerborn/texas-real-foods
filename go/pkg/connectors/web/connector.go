@@ -15,9 +15,6 @@ import (
 )
 
 var (
-    // collector used to scrape sites for data
-    scraper *colly.Collector
-
     // define custom errors
     ErrInvalidURI = errors.New("Invalid URI")
 )
@@ -40,6 +37,17 @@ func(connector *WebConnector) Name() string {
     return "web-scraper"
 }
 
+
+func NewScraper() *colly.Collector {
+    // generate new webscraper and save globally
+    scraper := colly.NewCollector()
+    scraper.AllowURLRevisit = false
+    scraper.MaxDepth = 1
+    scraper.IgnoreRobotsTxt = false
+    scraper.Async = false
+    return scraper
+}
+
 // function used to collect data using webscraper
 func(connector *WebConnector) CollectData(businesses []connectors.BusinessMetadata) (
     []connectors.BusinessUpdate, error) {
@@ -52,13 +60,6 @@ func(connector *WebConnector) CollectData(businesses []connectors.BusinessMetada
     hermesClient.IncrementGauge("running_collection_jobs", labels)
     defer hermesClient.DecrementGauge("running_collection_jobs", labels)
 
-    // generate new webscraper and save globally
-    scraper = colly.NewCollector()
-    scraper.AllowURLRevisit = false
-    scraper.MaxDepth = 1
-    scraper.IgnoreRobotsTxt = false
-    scraper.Async = false
-
     updates := []connectors.BusinessUpdate{}
     // iterate over businesses and scrape data
     for _, business := range(businesses) {
@@ -70,11 +71,13 @@ func(connector *WebConnector) CollectData(businesses []connectors.BusinessMetada
             log.Error(fmt.Errorf("unable to parse business URI: %+v", err))
             continue
         }
-        // configure scraper to only have access to host domain
+
+        // generate new scraper and configure to only have access to host domain
+        scraper := NewScraper()
         scraper.AllowedDomains = []string{host.Host}
 
         // scrape site for updated business information
-        update, err := connector.ScrapeSiteData(business)
+        update, err := connector.ScrapeSiteData(scraper,business)
         // increment hermes counter used to measure total number of sites scraped
         hermesClient.IncrementCounter("total_sites_scraped",
             map[string]string{"business_name": business.BusinessName})
@@ -88,7 +91,7 @@ func(connector *WebConnector) CollectData(businesses []connectors.BusinessMetada
 }
 
 // function used to scrape sites for updated business data
-func(connector *WebConnector) ScrapeSiteData(business connectors.BusinessMetadata) (
+func(connector *WebConnector) ScrapeSiteData(scraper *colly.Collector, business connectors.BusinessMetadata) (
     connectors.BusinessUpdate, error) {
 
     var (scrapeError error; data connectors.BusinessData)
@@ -124,7 +127,6 @@ func(connector *WebConnector) ScrapeSiteData(business connectors.BusinessMetadat
 
     // scrape website for data
     scraper.Visit(business.BusinessURI)
-    scraper.Wait()
 
     // handle any error raised during scraping of website
     if scrapeError != nil {

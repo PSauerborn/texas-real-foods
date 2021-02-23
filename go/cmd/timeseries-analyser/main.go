@@ -7,7 +7,6 @@ import (
     log "github.com/sirupsen/logrus"
 
 	"texas_real_foods/pkg/timeseries-analyser"
-	"texas_real_foods/pkg/notifications"
 	"texas_real_foods/pkg/utils"
 )
 
@@ -19,9 +18,25 @@ var (
             "analysis_interval_minutes": "1",
             "trf_api_host": "0.0.0.0",
             "trf_api_port": "10999",
+            "notify_api_host": "0.0.0.0",
+            "notify_api_port": "10756",
         },
     )
 )
+
+func getNotifyAPIConfig() utils.APIDependencyConfig {
+    // get configuration for downstream API dependencies and convert to integer
+    apiPortString := cfg.Get("notify_api_port")
+    apiPort, err := strconv.Atoi(apiPortString)
+    if err != nil {
+        panic(fmt.Sprintf("received invalid api port for notify API '%s'", apiPortString))
+    }
+    return utils.APIDependencyConfig{
+        Host: cfg.Get("notify_api_host"),
+        Port: &apiPort,
+        Protocol: "http",
+    }
+}
 
 func getTRFAPIConfig() utils.APIDependencyConfig {
     // get configuration for downstream API dependencies and convert to integer
@@ -47,6 +62,7 @@ func main() {
         panic(fmt.Sprintf("received invalid analysis interval '%s'", intervalString))
 	}
 
-	notify := notifications.NewDefaultNotificationEngine(cfg.Get("postgres_url"))
-	timeseries_analyser.NewAnalyser(getTRFAPIConfig(), notify, interval).Run()
+    // generate new timeseries analyser and run
+	timeseries_analyser.NewAnalyser(getTRFAPIConfig(),
+        getNotifyAPIConfig(), interval).Run()
 }
