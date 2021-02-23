@@ -21,6 +21,9 @@ tags:
   - name: Business API
     description: Micro-service used to manage Texas Real Foods businesses
 
+  - name: Notifications API
+    description: Micro-service used to manage notifications
+
 paths:
   /relay/health:
     get:
@@ -407,49 +410,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalServerErrorResponse'
 
-  /texas-real-foods/notifications:
-    get:
-      summary: API route used to retrieve list of notifications
-      tags:
-      - Business API
-      security:
-      - ApiKeyAuth: []
-      parameters:
-        - in: header
-          name: X-ApiKey
-          schema:
-            type: string
-          description: API Access Key
-          required: true
-      responses:
-        200:
-          description: JSON response containing notifications
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ListNotificationsResponse'
-
-        401:
-          description: JSON response containing unauthorized message
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnauthorizedResponse'
-
-        403:
-          description: JSON response containing forbidden message
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ForbiddenResponse'
-
-        500:
-          description: JSON response containing internal server error message
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InternalServerErrorResponse'
-
   /texas-real-foods/business:
     post:
       summary: API route used to register new business for analysis
@@ -813,6 +773,212 @@ paths:
               schema:
                 $ref: '#/components/schemas/InternalServerErrorResponse'
 
+  /notifications/all:
+    get:
+      summary: API route used to retrieve list of notifications
+      tags:
+      - Notifications API
+      security:
+      - ApiKeyAuth: []
+      parameters:
+        - in: header
+          name: X-ApiKey
+          schema:
+            type: string
+          description: API Access Key
+          required: true
+      responses:
+        200:
+          description: JSON response containing notifications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListNotificationsResponse'
+
+        401:
+          description: JSON response containing unauthorized message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+
+        403:
+          description: JSON response containing forbidden message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponse'
+
+        500:
+          description: JSON response containing internal server error message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponse'
+
+  /notifications/unread:
+    get:
+      summary: API route used to retrieve list of unread notifications
+      tags:
+      - Notifications API
+      security:
+      - ApiKeyAuth: []
+      parameters:
+        - in: header
+          name: X-ApiKey
+          schema:
+            type: string
+          description: API Access Key
+          required: true
+      responses:
+        200:
+          description: JSON response containing notifications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListNotificationsResponse'
+
+        401:
+          description: JSON response containing unauthorized message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+
+        403:
+          description: JSON response containing forbidden message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponse'
+
+        500:
+          description: JSON response containing internal server error message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponse'
+
+  /notifications/new:
+    post:
+      summary: API route used to generate new notification
+      tags:
+      - Notifications API
+      security:
+      - ApiKeyAuth: []
+      parameters:
+        - in: header
+          name: X-ApiKey
+          schema:
+            type: string
+          description: API Access Key
+          required: true
+      requestBody:
+        description: Raw JSON body containing notification
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewNotificationRequest'
+      responses:
+        200:
+          description: JSON response containing notifications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationCreatedResponse'
+
+        400:
+          description: JSON response containing invalid request message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidRequestResponse'
+
+        401:
+          description: JSON response containing unauthorized message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+
+        403:
+          description: JSON response containing forbidden message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponse'
+
+        409:
+          description: JSON response containing conflict response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationExistsResponse'
+
+        500:
+          description: JSON response containing internal server error message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponse'
+
+  /notifications/update/{notificationId}:
+    patch:
+      summary: API route used to mark notification as read
+      tags:
+      - Notifications API
+      security:
+      - ApiKeyAuth: []
+      parameters:
+        - in: header
+          name: X-ApiKey
+          schema:
+            type: string
+          description: API Access Key
+          required: true
+        - in: path
+          name: notificationId
+          schema:
+            type: string
+          description: ID of notification to update
+          required: true
+      responses:
+        200:
+          description: JSON response containing notifications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationUpdatedResponse'
+
+        401:
+          description: JSON response containing unauthorized message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedResponse'
+
+        403:
+          description: JSON response containing forbidden message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenResponse'
+
+        404:
+          description: JSON response containing not found response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationNotFoundResponse'
+
+        500:
+          description: JSON response containing internal server error message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorResponse'
+
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -912,7 +1078,7 @@ components:
           example: 709628d5-d7ff-43a7-9126-bcd4566959a1
         event_timestamp:
           type: string
-          example: 2021-02-04T12:47:55.531472Z
+          example: "2021-02-04T12:47:55.531472Z"
         status:
           type: string
           example: completed
@@ -1050,10 +1216,10 @@ components:
           example: https://example-business.com
         last_update:
           type: string
-          example: 2021-02-04T12:35:29.127003Z
+          example: "2021-02-04T12:35:29.127003Z"
         added:
           type: string
-          example: 2021-01-29T08:19:04.332113Z
+          example: "2021-01-29T08:19:04.332113Z"
         metadata:
           type: object
           properties:
@@ -1079,9 +1245,6 @@ components:
         notification_id:
           type: string
           example: 655357ab-e7a8-406d-87bb-0736f6538339
-        event_timestamp:
-          type: string
-          example: 2021-02-04T12:35:29.127003Z
         hash:
           type: string
           example: aff821945c66cb748592ede3ec2aac90ddfdea72d1f67ab0d983e05fc2b7a58b
@@ -1099,7 +1262,7 @@ components:
               example: example notification message. somethings changed
             event_timestamp:
               type: string
-              example: 2021-02-04T12:35:29.127003Z
+              example: "2021-02-04T12:35:29.127003Z"
 
     ListNotificationsResponse:
       properties:
@@ -1261,3 +1424,53 @@ components:
                     type: boolean
                     example: true
 
+    NotificationCreatedResponse:
+      properties:
+        http_code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: Successfully created notification
+
+    NotificationExistsResponse:
+      properties:
+        http_code:
+          type: integer
+          example: 409
+        message:
+          type: string
+          example: Notification hash already exists
+
+    NotificationUpdatedResponse:
+      properties:
+        http_code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: Notification successfully updated
+
+    NotificationNotFoundResponse:
+      properties:
+        http_code:
+          type: integer
+          example: 404
+        message:
+          type: string
+          example: Invalid notification ID
+
+    NewNotificationRequest:
+      properties:
+        business_name:
+          type: string
+          example: example-business
+        business_id:
+          type: string
+          example: 655357ab-e7a8-406d-87bb-0736f6538339
+        notification:
+          type: string
+          example: example notification message. somethings changed
+        event_timestamp:
+          type: string
+          example: "2021-02-04T12:35:29.127003Z"
