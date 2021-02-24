@@ -2,6 +2,7 @@ package notifications
 
 import (
     "fmt"
+    "strconv"
     "net/http"
 
     "github.com/gin-gonic/gin"
@@ -38,6 +39,15 @@ func getNotificationsHandler(ctx *gin.Context) {
     log.Info("received request to retrieve notifications")
     // retrieve persistence layer from context and retrieve
     // all current notifications
+    limitString := ctx.DefaultQuery("limit", "100")
+    limit, err := strconv.Atoi(limitString)
+    if err != nil {
+        log.Error(fmt.Errorf("received invalid limit %s", limitString))
+        ctx.JSON(http.StatusBadRequest, gin.H{"http_code": http.StatusBadRequest,
+            "message": "Invalid notification limit"})
+        return
+    }
+
     db, _ := ctx.MustGet("persistence").(*Persistence)
     notifications, err := db.GetNotifications()
     if err != nil {
@@ -45,6 +55,10 @@ func getNotificationsHandler(ctx *gin.Context) {
         ctx.JSON(http.StatusInternalServerError, gin.H{"http_code": http.StatusInternalServerError,
             "message": "Internal server error"})
         return
+    }
+    // reduce notifications if limit exceeds set
+    if len(notifications) > limit {
+        notifications = notifications[:limit]
     }
     ctx.JSON(http.StatusOK, gin.H{"http_code": http.StatusOK,
         "count": len(notifications), "notifications": notifications})
@@ -55,6 +69,15 @@ func getUnreadNotificationsHandler(ctx *gin.Context) {
     log.Info("received request to retrieve unread notifications")
     // retrieve persistence layer from context and retrieve
     // all unread notifications
+    limitString := ctx.DefaultQuery("limit", "100")
+    limit, err := strconv.Atoi(limitString)
+    if err != nil {
+        log.Error(fmt.Errorf("received invalid limit %s", limitString))
+        ctx.JSON(http.StatusBadRequest, gin.H{"http_code": http.StatusBadRequest,
+            "message": "Invalid notification limit"})
+        return
+    }
+
     db, _ := ctx.MustGet("persistence").(*Persistence)
     notifications, err := db.GetUnreadNotifications()
     if err != nil {
@@ -62,6 +85,10 @@ func getUnreadNotificationsHandler(ctx *gin.Context) {
         ctx.JSON(http.StatusInternalServerError, gin.H{"http_code": http.StatusInternalServerError,
             "message": "Internal server error"})
         return
+    }
+    // reduce notifications if limit exceeds set
+    if len(notifications) > limit {
+        notifications = notifications[:limit]
     }
     ctx.JSON(http.StatusOK, gin.H{"http_code": http.StatusOK,
         "count": len(notifications), "notifications": notifications})
