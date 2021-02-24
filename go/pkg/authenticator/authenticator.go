@@ -5,6 +5,7 @@ import (
     "net/http"
 
     "github.com/gin-gonic/gin"
+    "github.com/gin-contrib/cors"
     log "github.com/sirupsen/logrus"
 )
 
@@ -20,8 +21,14 @@ type Authenticator struct{
 func New(postgresUrl, listenAddress string, listenPort int) *Authenticator {
     // create new instance of authenticator
     router := gin.Default()
-    router.Any("/authenticate", Authenticate)
+    router.Use(cors.New(cors.Config{
+        AllowOrigins:     []string{"*"},
+        AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+        AllowCredentials: true,
+        AllowHeaders:     []string{"*"},
+    }))
 
+    router.Any("/authenticate", Authenticate)
     // set postgres url for global user
     postgresURL = postgresUrl
     return &Authenticator{

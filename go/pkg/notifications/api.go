@@ -5,6 +5,7 @@ import (
     "net/http"
 
     "github.com/gin-gonic/gin"
+    "github.com/gin-contrib/cors"
     "github.com/google/uuid"
     log "github.com/sirupsen/logrus"
 )
@@ -13,6 +14,12 @@ import (
 // relevant routes set
 func NewNotificationService(postgresUrl string) *gin.Engine {
     router := gin.Default()
+    router.Use(cors.New(cors.Config{
+        AllowOrigins:     []string{"*"},
+        AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+        AllowCredentials: true,
+        AllowHeaders:     []string{"*"},
+    }))
 
     // add postgres session middleware to API
     router.Use(PostgresSessionMiddleware(postgresUrl))
