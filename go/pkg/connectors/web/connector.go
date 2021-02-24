@@ -3,9 +3,9 @@ package connectors
 import (
     "fmt"
     "errors"
-    "net/url"
+    "net/http"
+    "io/ioutil"
 
-    "github.com/gocolly/colly/v2"
     "github.com/PSauerborn/hermes/pkg/client"
     log "github.com/sirupsen/logrus"
 
@@ -37,17 +37,6 @@ func(connector *WebConnector) Name() string {
     return "web-scraper"
 }
 
-
-func NewScraper() *colly.Collector {
-    // generate new webscraper and save globally
-    scraper := colly.NewCollector()
-    scraper.AllowURLRevisit = false
-    scraper.MaxDepth = 1
-    scraper.IgnoreRobotsTxt = false
-    scraper.Async = false
-    return scraper
-}
-
 // function used to collect data using webscraper
 func(connector *WebConnector) CollectData(businesses []connectors.BusinessMetadata) (
     []connectors.BusinessUpdate, error) {
@@ -64,20 +53,8 @@ func(connector *WebConnector) CollectData(businesses []connectors.BusinessMetada
     // iterate over businesses and scrape data
     for _, business := range(businesses) {
         log.Debug(fmt.Sprintf("scraping data for business %+v", business))
-
-        // parse url and extract host
-        host, err := url.Parse(business.BusinessURI)
-        if err != nil {
-            log.Error(fmt.Errorf("unable to parse business URI: %+v", err))
-            continue
-        }
-
-        // generate new scraper and configure to only have access to host domain
-        scraper := NewScraper()
-        scraper.AllowedDomains = []string{host.Host}
-
         // scrape site for updated business information
-        update, err := connector.ScrapeSiteData(scraper,business)
+        update, err := connector.ScrapeSiteData(business)
         // increment hermes counter used to measure total number of sites scraped
         hermesClient.IncrementCounter("total_sites_scraped",
             map[string]string{"business_name": business.BusinessName})
@@ -91,52 +68,50 @@ func(connector *WebConnector) CollectData(businesses []connectors.BusinessMetada
 }
 
 // function used to scrape sites for updated business data
-func(connector *WebConnector) ScrapeSiteData(scraper *colly.Collector, business connectors.BusinessMetadata) (
+func(connector *WebConnector) ScrapeSiteData(business connectors.BusinessMetadata) (
     connectors.BusinessUpdate, error) {
 
-    var (scrapeError error; data connectors.BusinessData)
+    var (scrapeError error; data connectors.BusinessData; update connectors.BusinessUpdate)
     // add callbacks to scraper and start
-    scraper.OnRequest(func(r *colly.Request) {
-        log.Debug(fmt.Sprintf("making request to site %s", r.URL))
-    })
+    // generate new HTTP request with given settings
+    req, err := http.NewRequest("GET", business.BusinessURI, nil)
+    if err != nil {
+        log.Error(fmt.Errorf("unable to generate new HTTP Request: %+v", err))
+        return update, err
+    }
 
-    // define response handler
-    scraper.OnResponse(func(r *colly.Response) {
-        log.Debug(fmt.Sprintf("connected to page with code %d", r.StatusCode))
-        if r.StatusCode == 200 {
-            // parse site and extract data
-            data, scrapeError = connector.ParseSiteData(business, r.Body)
-            if scrapeError != nil {
-                log.Error(fmt.Errorf("unable to scrape site data: %+v", scrapeError))
-                return
-            }
-        } else {
-            // update asset to indicate that website is no longer active
-            data = connectors.BusinessData{
-                WebsiteLive: false,
-                Source: connector.Name(),
-                BusinessOpen: false,
-            }
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+        log.Error(fmt.Errorf("unable to execute HTTP request: %+v", err))
+        return update, err
+    }
+    defer resp.Body.Close()
+
+    switch resp.StatusCode {
+    case 200:
+        // extract request body
+        bytes, err := ioutil.ReadAll(resp.Body)
+        if err != nil {
+            log.Error(fmt.Errorf("unable to read response body: %+v", err))
+            return update, err
         }
-    })
-    // define error handler
-    scraper.OnError(func(r *colly.Response, err error) {
-        log.Error(fmt.Errorf("unable to scrape web data: %+v", err))
-        scrapeError = err
-    })
-
-    // scrape website for data
-    scraper.Visit(business.BusinessURI)
-
-    // handle any error raised during scraping of website
-    if scrapeError != nil {
-        switch scrapeError {
-        default:
-            return connectors.BusinessUpdate{}, scrapeError
+        // parse site and extract data
+        data, scrapeError = connector.ParseSiteData(business, bytes)
+        if scrapeError != nil {
+            log.Error(fmt.Errorf("unable to scrape site data: %+v", scrapeError))
+        }
+    default:
+        log.Error(fmt.Errorf("unable to scrape site data: received status code %d", resp.StatusCode))
+        // update asset to indicate that website is no longer active
+        data = connectors.BusinessData{
+            WebsiteLive: false,
+            Source: connector.Name(),
+            BusinessOpen: false,
         }
     }
     // generate new business update and return
-    update := connectors.BusinessUpdate{
+    update = connectors.BusinessUpdate{
         Meta: business,
         Data: data,
     }

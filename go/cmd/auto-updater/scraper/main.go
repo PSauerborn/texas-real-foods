@@ -21,7 +21,7 @@ var (
             "trf_api_host": "0.0.0.0",
             "trf_api_port": "10999",
             "utils_api_host": "0.0.0.0",
-            "utils_api_port": "10999",
+            "utils_api_port": "10847",
         },
     )
 )

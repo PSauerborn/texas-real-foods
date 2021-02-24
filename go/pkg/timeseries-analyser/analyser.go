@@ -85,7 +85,7 @@ func(analyser *TimeseriesAnalyser) AnalyseBusinessData(business connectors.Busin
                 log.Info(fmt.Sprintf("found differences in timeseries entries for %+v:%s",
                     business.BusinessName, source))
                 // generate notification message and hash
-                notificationString := fmt.Sprintf("found change in timeseries for %s:%s",
+                notificationString := fmt.Sprintf("Found change in timeseries business data for %s in source %s",
                     business.BusinessName, source)
 
                 // generate new notification
