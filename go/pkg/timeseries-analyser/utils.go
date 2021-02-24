@@ -15,12 +15,21 @@ func stringSliceEqual(a, b []string) bool {
     if len(a) != len(b) {
         return false
     }
-    for i, v := range a {
-        if v != b[i] {
+    for _, entry := range(a) {
+        if !stringSliceContains(b, entry) {
             return false
         }
     }
     return true
+}
+
+func stringSliceContains(slice []string, element string) bool {
+    for _, entry := range(slice) {
+        if entry == element {
+            return true
+        }
+    }
+    return false
 }
 
 // function used to determine if timeseries entries differ

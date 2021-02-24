@@ -138,7 +138,7 @@ func(connector *WebConnector) ParseSiteData(business connectors.BusinessMetadata
     // assign valid phone numbers to asset
     businessData := connectors.BusinessData{
         WebsiteLive: true,
-        BusinessPhones: phones,
+        BusinessPhones: results.Valid,
         Source: connector.Name(),
         BusinessOpen: true,
     }
