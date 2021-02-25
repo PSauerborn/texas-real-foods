@@ -51,8 +51,10 @@ func(connector *WebConnector) CollectData(businesses []connectors.BusinessMetada
 
     updates := []connectors.BusinessUpdate{}
     // iterate over businesses and scrape data
-    for _, business := range(businesses) {
-        log.Debug(fmt.Sprintf("scraping data for business %+v", business))
+    for count, business := range(businesses) {
+        // process new scrape request on go routine
+        log.Debug(fmt.Sprintf("scraping data for business %s: count (%d)/(%d)",
+            business.BusinessName, count + 1, len(businesses)))
         // scrape site for updated business information
         update, err := connector.ScrapeSiteData(business)
         // increment hermes counter used to measure total number of sites scraped

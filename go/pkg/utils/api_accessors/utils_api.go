@@ -34,17 +34,17 @@ func NewUtilsAPIAccessorFromConfig(config utils.APIDependencyConfig) *UtilsAPIAc
     }
 }
 
-type PhoneNumberValidationResponse struct{
+type PhoneNumberValidationResponse struct {
     HTTPCode int                          `json:"http_code"`
     Data     PhoneNumberValidationResults `json:"data"`
 }
 
-type PhoneNumberValidationResults struct{
+type PhoneNumberValidationResults struct {
     Valid   []string `json:"valid"`
     Invalid []string `json:"invalid"`
 }
 
-type PhoneNumberValidationRequest struct{
+type PhoneNumberValidationRequest struct {
     CountryCode string   `json:"country_code"`
     Numbers     []string `json:"numbers"`
 }
@@ -56,24 +56,24 @@ func(accessor *UtilsAPIAccessor) ValidatePhoneNumbers(numbers []string) (
     log.Debug(fmt.Sprintf("validating %d numbers against utils API", len(numbers)))
     url := accessor.FormatURL("validate")
 
-    var response PhoneNumberValidationResults
+    var response PhoneNumberValidationResponse
     // serialize request body into JSON string
     jsonBody, err := json.Marshal(PhoneNumberValidationRequest{
         CountryCode: "US",
         Numbers: numbers})
     if err != nil {
-        return response, utils.ErrInvalidRequestBodyJSON
+        return response.Data, utils.ErrInvalidRequestBodyJSON
     }
     // generate new JSON request and execute
     req, err := accessor.NewJSONRequest("POST", url, bytes.NewBuffer(jsonBody), nil)
     if err != nil {
         log.Error(fmt.Errorf("unable to create request: %+v", err))
-        return response, err
+        return response.Data, err
     }
     resp, err := accessor.ExecuteRequest(req)
     if err != nil {
         log.Error(fmt.Errorf("unable to execute API request: %+v", err))
-        return response, err
+        return response.Data, err
     }
     defer resp.Body.Close()
 
@@ -84,12 +84,12 @@ func(accessor *UtilsAPIAccessor) ValidatePhoneNumbers(numbers []string) (
         // decode JSON response from API and return
         if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
             log.Error(fmt.Errorf("unable to parse JSON response from API: %+v", err))
-            return response, err
+            return response.Data, err
         }
-        return response, nil
+        return response.Data, nil
     default:
         log.Error(fmt.Sprintf("failed to validate phone numbers: received invalid %d response from API",
             resp.StatusCode))
-        return response, utils.ErrInvalidAPIResponse
+        return response.Data, utils.ErrInvalidAPIResponse
     }
 }

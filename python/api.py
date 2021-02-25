@@ -36,6 +36,7 @@ def validate():
 
     # validate phone numbers using python library
     valid, invalid = validate_numbers(body.numbers, body.country_code)
+    LOGGER.debug('returning valid numbers %s', valid)
     return {'http_code': 200, 'data': {'valid': valid, 'invalid': invalid}}
 
 def get_economic_region(county: str) -> Union[dict, None]:
