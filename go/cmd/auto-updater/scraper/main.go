@@ -4,8 +4,6 @@ import (
     "fmt"
     "strconv"
 
-    log "github.com/sirupsen/logrus"
-
     "texas_real_foods/pkg/connectors/web"
     "texas_real_foods/pkg/utils"
     updater "texas_real_foods/pkg/auto-updater"
@@ -22,10 +20,12 @@ var (
             "trf_api_port": "10999",
             "utils_api_host": "0.0.0.0",
             "utils_api_port": "10847",
+            "log_level": "INFO",
         },
     )
 )
 
+// function used to retrieve API config for utils API
 func getUtilsAPIConfig() utils.APIDependencyConfig {
     // get configuration for downstream API dependencies and convert to integer
     apiPortString := cfg.Get("utils_api_port")
@@ -40,7 +40,8 @@ func getUtilsAPIConfig() utils.APIDependencyConfig {
     }
 }
 
-func getTRFAPIConfig() utils.APIDependencyConfig {
+// function used to retrieve API config for texas real foods API
+func getTexasRealFoodsAPIConfig() utils.APIDependencyConfig {
     // get configuration for downstream API dependencies and convert to integer
     apiPortString := cfg.Get("trf_api_port")
     apiPort, err := strconv.Atoi(apiPortString)
@@ -55,8 +56,7 @@ func getTRFAPIConfig() utils.APIDependencyConfig {
 }
 
 func main() {
-    log.SetLevel(log.DebugLevel)
-
+    cfg.ConfigureLogging()
     // generate new web connector and instance of notification engine
     connector := connectors.NewWebConnector(getUtilsAPIConfig())
     intervalString := cfg.Get("collection_interval_minutes")
@@ -67,6 +67,7 @@ func main() {
     }
 
     // create new updater with data connector and run
-    updater.New(connector, interval, cfg.Get("postgres_url"),
-        getTRFAPIConfig()).Run()
+    collector := updater.NewStreamedAutoUpdater(connector, interval, cfg.Get("postgres_url"),
+        getTexasRealFoodsAPIConfig())
+    collector.RunWithStreaming()
 }

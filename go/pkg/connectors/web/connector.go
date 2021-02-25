@@ -69,6 +69,41 @@ func(connector *WebConnector) CollectData(businesses []connectors.BusinessMetada
     return updates, nil
 }
 
+// function used to collect data using webscraper
+// via the data streaming protocol. note that instead
+// of returning a list of updates, values are sent
+// to the updater via an event channel at collection
+func(connector *WebConnector) StreamData(updateChannel chan connectors.BusinessUpdate,
+     businesses []connectors.BusinessMetadata) error {
+    log.Info(fmt.Sprintf("streaming data for %d businesses using web connector", len(businesses)))
+
+    // create new instance of hermes client to update prometheus metrics
+    hermesClient := hermes_client.New("texas-real-foods-hermes", 7789)
+    labels := map[string]string{"source": connector.Name()}
+    // increment gauge measuring running jobs and defer decrementing
+    hermesClient.IncrementGauge("running_collection_jobs", labels)
+    defer hermesClient.DecrementGauge("running_collection_jobs", labels)
+
+    // iterate over businesses and scrape data
+    for count, business := range(businesses) {
+        // process new scrape request on go routine
+        log.Info(fmt.Sprintf("scraping data for business %s: count (%d)/(%d)",
+            business.BusinessName, count + 1, len(businesses)))
+        // scrape site for updated business information
+        update, err := connector.ScrapeSiteData(business)
+        // increment hermes counter used to measure total number of sites scraped
+        hermesClient.IncrementCounter("total_sites_scraped",
+            map[string]string{"business_name": business.BusinessName})
+        if err != nil {
+            log.Error(fmt.Sprintf("unable to scrape data for business %+v: %+v", business, err))
+            continue
+        }
+        // send updates down event channel to process
+        updateChannel <- update
+    }
+    return nil
+}
+
 // function used to scrape sites for updated business data
 func(connector *WebConnector) ScrapeSiteData(business connectors.BusinessMetadata) (
     connectors.BusinessUpdate, error) {

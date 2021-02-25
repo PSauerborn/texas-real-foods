@@ -63,6 +63,6 @@ func GetPhoneNumbersByRegex(text string) []string {
             }
         }
     }
-    log.Info(fmt.Sprintf("found phone number matches for numbers %+v", matches))
+    log.Debug(fmt.Sprintf("found phone number matches for numbers %+v", matches))
     return matches
 }

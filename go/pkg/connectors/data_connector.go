@@ -14,6 +14,12 @@ import (
 // various places
 type AutoUpdateDataConnector interface{
     // function used to collect data from connector source
-    CollectData([]BusinessMetadata) ([]BusinessUpdate, error)
+    CollectData(businesses []BusinessMetadata) ([]BusinessUpdate, error)
+    Name() string
+}
+
+type StreamedAutoUpdateDataConnector interface{
+    // function used to collect data from connector source
+    StreamData(updates chan BusinessUpdate, businesses []BusinessMetadata) error
     Name() string
 }

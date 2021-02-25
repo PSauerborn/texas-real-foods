@@ -12,9 +12,6 @@ import (
     api "texas_real_foods/pkg/utils/api_accessors"
 )
 
-var (
-
-)
 
 // function used to create new auto updater. the auto-updater
 // takes a variety of components to operate. particularly
@@ -38,6 +35,7 @@ type AutoUpdater struct{
     CollectionPeriodMinutes int
     TRFApiConfig            utils.APIDependencyConfig
     DataConnector           connectors.AutoUpdateDataConnector
+    StreamedConnector       connectors.StreamedAutoUpdateDataConnector
 }
 
 // function used to retrieve business metadata for all stored
