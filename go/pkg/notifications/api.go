@@ -56,12 +56,14 @@ func getNotificationsHandler(ctx *gin.Context) {
             "message": "Internal server error"})
         return
     }
+
+    totalNotifications := len(notifications)
     // reduce notifications if limit exceeds set
     if len(notifications) > limit {
         notifications = notifications[:limit]
     }
     ctx.JSON(http.StatusOK, gin.H{"http_code": http.StatusOK,
-        "count": len(notifications), "notifications": notifications})
+        "count": totalNotifications, "notifications": notifications})
 }
 
 // API handler used to retrieve unread notifications
@@ -86,12 +88,14 @@ func getUnreadNotificationsHandler(ctx *gin.Context) {
             "message": "Internal server error"})
         return
     }
+
+    totalNotifications := len(notifications)
     // reduce notifications if limit exceeds set
     if len(notifications) > limit {
         notifications = notifications[:limit]
     }
     ctx.JSON(http.StatusOK, gin.H{"http_code": http.StatusOK,
-        "count": len(notifications), "notifications": notifications})
+        "count": totalNotifications, "notifications": notifications})
 }
 
 // API handler used to update notifications
