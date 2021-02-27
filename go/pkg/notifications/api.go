@@ -31,6 +31,7 @@ func NewNotificationService(postgresUrl string) *gin.Engine {
     router.POST("/notifications/new", createNotificationHandler)
 
     router.PATCH("/notifications/update/:notificationId", updateNotificationHandler)
+    router.PATCH("/notifications/update-batch", updateNotificationBatchHandler)
     return router
 }
 
@@ -61,6 +62,19 @@ func getNotificationsHandler(ctx *gin.Context) {
     // reduce notifications if limit exceeds set
     if len(notifications) > limit {
         notifications = notifications[:limit]
+    }
+
+    // extract filter from query if present and filter
+    // notifications on metadata
+    filter := ctx.DefaultQuery("filter", "")
+    if len(filter) > 1 {
+        notifications, err = FilterNotificationsByMetadata(notifications, filter)
+        if err != nil {
+            log.Error(fmt.Errorf("unable to filter notifications: %+v", err))
+            ctx.JSON(http.StatusBadRequest, gin.H{"http_code": http.StatusBadRequest,
+                "message": "Invalid notification filter"})
+            return
+        }
     }
     ctx.JSON(http.StatusOK, gin.H{"http_code": http.StatusOK,
         "count": totalNotifications, "notifications": notifications})
@@ -93,6 +107,19 @@ func getUnreadNotificationsHandler(ctx *gin.Context) {
     // reduce notifications if limit exceeds set
     if len(notifications) > limit {
         notifications = notifications[:limit]
+    }
+
+    // extract filter from query if present and filter
+    // notifications on metadata
+    filter := ctx.DefaultQuery("filter", "")
+    if len(filter) > 1 {
+        notifications, err = FilterNotificationsByMetadata(notifications, filter)
+        if err != nil {
+            log.Error(fmt.Errorf("unable to filter notifications: %+v", err))
+            ctx.JSON(http.StatusBadRequest, gin.H{"http_code": http.StatusBadRequest,
+                "message": "Invalid notification filter"})
+            return
+        }
     }
     ctx.JSON(http.StatusOK, gin.H{"http_code": http.StatusOK,
         "count": totalNotifications, "notifications": notifications})
@@ -172,5 +199,38 @@ func createNotificationHandler(ctx *gin.Context) {
         "message": "Successfully created notification"})
 }
 
+// API handler used to mark a batch of notifications as read
+func updateNotificationBatchHandler(ctx *gin.Context) {
+    log.Info("received request to updated notification batch")
+    var request struct {
+        Notifications []uuid.UUID `json:"notifications" binding:"required"`
+    }
+    if err := ctx.ShouldBind(&request); err != nil {
+        ctx.JSON(http.StatusNotFound, gin.H{"http_code": http.StatusNotFound,
+            "message": "Invalid request"})
+        return
+    }
 
+    // extract persistence from context and create new notification
+    db, _ := ctx.MustGet("persistence").(*Persistence)
+    for _, notificationId := range(request.Notifications) {
+        // check if notification exists
+        exists, err := db.NotificationExists(notificationId)
+        if err != nil {
+            log.Error(fmt.Errorf("unable to verify if notification exists: %+v", err))
+            ctx.JSON(http.StatusInternalServerError, gin.H{"http_code": http.StatusInternalServerError,
+                "message": "Internal server error"})
+            return
+        } else if !exists {
+            log.Warn(fmt.Sprintf("cannot find notification with ID %s", notificationId))
+            continue
+        }
 
+        // update notification in database
+        if err := db.UpdateNotification(notificationId); err != nil {
+            log.Error(fmt.Errorf("unable to update notification with ID %s: %+v", notificationId, err))
+        }
+    }
+    ctx.JSON(http.StatusAccepted, gin.H{"http_code": http.StatusAccepted,
+        "message": "Successfully updated notifications"})
+}

@@ -32,10 +32,39 @@ func(db *Persistence) CreateNotification(payload ChangeNotification) error {
     payloadJson, _ := json.Marshal(payload)
     notificationId := uuid.New()
 
-    query := `INSERT INTO notifications(notification_id,notification,hash) VALUES($1,$2,$3)`
+    var query string
+    query = `INSERT INTO notifications(notification_id,notification,hash) VALUES($1,$2,$3)`
     _, err := db.Session.Exec(context.Background(), query, notificationId, payloadJson,
         payload.NotificationHash)
-    return err
+    if err != nil {
+        log.Error(fmt.Errorf("unable to insert notification into database: %+v", err))
+        return err
+    }
+
+    // insert metadata into tables
+    if payload.Metadata != nil {
+        // convert metadata to JSON format
+        meta, err := json.Marshal(payload.Metadata)
+        if err != nil {
+            log.Error(fmt.Errorf("unable to convert metadata to JSON format: %+v", err))
+            return err
+        }
+        query = `INSERT INTO notification_metadata(notification_id,metadata) VALUES($1,$2)`
+        _, err = db.Session.Exec(context.Background(), query, notificationId, meta)
+        if err != nil {
+            log.Error(fmt.Errorf("unable to insert metadata into database: %+v", err))
+            return err
+        }
+    // by default, an empty JSON object is inserted into the metadata table
+    } else {
+        query = `INSERT INTO notification_metadata(notification_id) VALUES($1)`
+        _, err = db.Session.Exec(context.Background(), query, notificationId)
+        if err != nil {
+            log.Error(fmt.Errorf("unable to insert metadata into database: %+v", err))
+            return err
+        }
+    }
+    return nil
 }
 
 type Notification struct {
@@ -48,7 +77,8 @@ func(db *Persistence) GetNotifications() ([]Notification, error) {
     log.Debug("retrieving notifications from database...")
 
     notifications := []Notification{}
-    query := `SELECT notification,notification_id FROM notifications`
+    query := `SELECT data.notification,data.notification_id,meta.metadata FROM notifications data
+        INNER JOIN notification_metadata meta ON meta.notification_id = data.notification_id`
     rows, err := db.Session.Query(context.Background(), query)
     if err != nil {
         switch err {
@@ -60,17 +90,24 @@ func(db *Persistence) GetNotifications() ([]Notification, error) {
     }
 
     for rows.Next() {
-        var (payloadJson []byte; notificationId uuid.UUID)
-        if err := rows.Scan(&payloadJson, &notificationId); err != nil {
+        var (payloadJson, meta []byte; notificationId uuid.UUID)
+        if err := rows.Scan(&payloadJson, &notificationId, &meta); err != nil {
             log.Error(fmt.Errorf("unable to retreive notification from database: %+v", err))
             continue
         }
-        // convert JSON format of notification into notification
+        // convert JSON format of notification into notification struct
         var notification ChangeNotification
         if err := json.Unmarshal(payloadJson, &notification); err != nil {
             log.Error(fmt.Errorf("unable to convert JSON to struct: %+v", err))
             continue
         }
+        // convert metadata from JSON to map and add to notification
+        var metaData map[string]interface{}
+        if err := json.Unmarshal(meta, &metaData); err != nil {
+            log.Error(fmt.Errorf("unable to convert metadata JSON to struct: %+v", err))
+            continue
+        }
+        notification.Metadata = metaData
         notifications = append(notifications, Notification{notificationId, notification})
     }
     return notifications, nil
@@ -81,8 +118,9 @@ func(db *Persistence) GetUnreadNotifications() ([]Notification, error) {
     log.Debug("retrieving unread notifications from database...")
 
     notifications := []Notification{}
-    query := `SELECT notification,notification_id FROM notifications
-        WHERE read=false`
+    query := `SELECT data.notification,data.notification_id,meta.metadata FROM notifications data
+        INNER JOIN notification_metadata meta ON meta.notification_id = data.notification_id
+        WHERE data.read=false`
     rows, err := db.Session.Query(context.Background(), query)
     if err != nil {
         switch err {
@@ -94,8 +132,8 @@ func(db *Persistence) GetUnreadNotifications() ([]Notification, error) {
     }
 
     for rows.Next() {
-        var (payloadJson []byte; notificationId uuid.UUID)
-        if err := rows.Scan(&payloadJson, &notificationId); err != nil {
+        var (payloadJson, meta []byte; notificationId uuid.UUID)
+        if err := rows.Scan(&payloadJson, &notificationId, &meta); err != nil {
             log.Error(fmt.Errorf("unable to retreive notification from database: %+v", err))
             continue
         }
@@ -105,6 +143,13 @@ func(db *Persistence) GetUnreadNotifications() ([]Notification, error) {
             log.Error(fmt.Errorf("unable to convert JSON to struct: %+v", err))
             continue
         }
+        // convert metadata from JSON to map and add to notification
+        var metaData map[string]interface{}
+        if err := json.Unmarshal(meta, &metaData); err != nil {
+            log.Error(fmt.Errorf("unable to convert metadata JSON to struct: %+v", err))
+            continue
+        }
+        notification.Metadata = metaData
         notifications = append(notifications, Notification{notificationId, notification})
     }
     return notifications, nil

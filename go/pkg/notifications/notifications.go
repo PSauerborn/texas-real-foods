@@ -15,11 +15,12 @@ var (
 
 
 type ChangeNotification struct{
-    BusinessId       uuid.UUID `json:"business_id" binding:"required"`
-    BusinessName     string    `json:"business_name" binding:"required"`
-    EventTimestamp   time.Time `json:"event_timestamp" binding:"required"`
-    Notification     string    `json:"notification" binding:"required"`
-    NotificationHash string    `json:"notification_hash" binding:"required"`
+    BusinessId       uuid.UUID              `json:"business_id" binding:"required"`
+    BusinessName     string                 `json:"business_name" binding:"required"`
+    EventTimestamp   time.Time              `json:"event_timestamp" binding:"required"`
+    Notification     string                 `json:"notification" binding:"required"`
+    NotificationHash string                 `json:"notification_hash" binding:"required"`
+    Metadata         map[string]interface{} `json:"metadata"`
 }
 
 // define interface for engine

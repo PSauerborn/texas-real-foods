@@ -95,6 +95,9 @@ func(analyser *TimeseriesAnalyser) AnalyseBusinessData(business connectors.Busin
                     EventTimestamp: time.Now(),
                     Notification: notificationString,
                     NotificationHash: generateNotificationHash(business.BusinessId, source),
+                    Metadata: map[string]interface{}{
+                        "source": source,
+                    },
                 }
                 notify = append(notify, notification)
                 break

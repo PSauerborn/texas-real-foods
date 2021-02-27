@@ -94,9 +94,12 @@ func main() {
 	notification := notifications.ChangeNotification{
 		BusinessId: uuid.New(),
 		BusinessName: "test-business",
-		NotificationHash: "test-hash",
+		NotificationHash: uuid.New().String(),
 		EventTimestamp: time.Now(),
-		Notification: "testing-notification",
+		Notification: "testing-notification-1",
+		Metadata: map[string]interface{}{
+			"source": "testing-filter",
+		},
 	}
 
 	accessor := apis.NewNotificationsApiAccessorFromConfig(cfg)
