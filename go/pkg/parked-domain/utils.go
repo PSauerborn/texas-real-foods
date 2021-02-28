@@ -25,7 +25,8 @@ func GoDaddyDomainParked(body string) bool {
     // check for common markers/messages
     parkedMessage := strings.Contains(body, "this web page is parked free, courtesy of godaddy")
     brokerMessage := strings.Contains(body, "our domain broker service may be able to get it for you")
-    return parkedMessage || brokerMessage
+    landerMessage := strings.Contains(body, "parking-lander")
+    return parkedMessage || brokerMessage || landerMessage
 }
 
 // function used to generate notification hash

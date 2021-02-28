@@ -140,6 +140,8 @@ func(checker *ParkedDomainChecker) Run() {
 
                 // iterate over businesses and checked for parked domains
                 for _, business := range(businesses) {
+                    log.Info(fmt.Sprintf("checking business %s at %s for parked domain",
+                        business.BusinessName, business.BusinessURI))
                     parked, err := checker.IsDomainParked(business)
                     if err != nil {
                         log.Error(fmt.Errorf("unable to check business %s at URI %s for parked domain: %+v",
@@ -155,7 +157,7 @@ func(checker *ParkedDomainChecker) Run() {
 
                 // log total time elapsed to process job
                 elapsed := time.Now().Sub(start)
-                log.Info(fmt.Sprintf("finished clearing job. took %fs to process", elapsed.Seconds()))
+                log.Info(fmt.Sprintf("finished domain-parked job. took %fs to process", elapsed.Seconds()))
             case <- quitChan:
                 // stop ticker and add to waitgroup
                 ticker.Stop()
