@@ -20,3 +20,5 @@
 __pycache__
 
 *.csv
+
+validate_notifications.py

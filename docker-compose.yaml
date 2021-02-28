@@ -159,6 +159,31 @@ services:
     env_file:
     - go/cmd/timeseries-analyser/.env
 
+  # cleaner:
+  #   build:
+  #     context: ./go
+  #     dockerfile: cmd/cleaner/Dockerfile
+  #   restart: unless-stopped
+  #   container_name: texas-real-foods-db-cleaner
+  #   networks:
+  #   - core
+  #   - postgres
+  #   - texas-real-foods
+  #   env_file:
+  #   - go/cmd/cleaner/.env
+
+  parked-domain-checker:
+    build:
+      context: ./go
+      dockerfile: cmd/parked-check/Dockerfile
+    restart: unless-stopped
+    container_name: texas-real-foods-parked-domain-checker
+    networks:
+    - core
+    - postgres
+    - texas-real-foods
+    env_file:
+    - go/cmd/parked-check/.env
 
   mail-relay:
     build:
