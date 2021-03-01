@@ -46,10 +46,10 @@ type GoogleMetadata struct {
 }
 
 type GoogleAPIResponse struct {
-    Name                 string `json:"name"`
-    FormattedAddress     string `json:"formatted_address"`
-    FormattedPhoneNumber string `json:"formatted_phone_number"`
-    PermanentlyClosed    string `json:"permanently_closed"`
-    PlaceId              string `json:"place_id"`
-    Website              string `json:"website"`
+    Name                 string `json:"name" validate:"required"`
+    FormattedAddress     string `json:"formatted_address" validate:"required"`
+    FormattedPhoneNumber string `json:"formatted_phone_number" validate:"required"`
+    BusinessStatus       string `json:"business_status" validate:"required"`
+    PlaceId              string `json:"place_id" validate:"required"`
+    Website              string `json:"website" validate:"required"`
 }

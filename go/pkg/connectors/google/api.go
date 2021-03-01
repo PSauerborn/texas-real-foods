@@ -24,18 +24,21 @@ var (
 
 // function to generate query string for Google Place API
 func GenerateQueryString(apiKey, placeId string) string {
-    fields := "formatted_address,name,permanently_closed,url,place_id,website,formatted_phone_number"
+    fields := "formatted_address,name,permanently_closed,url,place_id,website,business_status,formatted_phone_number"
     return fmt.Sprintf("place_id=%s&fields=%s&key=%s", placeId, fields, apiKey)
 }
 
 // function used to parse response from google place API
 func ParseGoogleResponse(data io.ReadCloser) (GoogleAPIResponse, error) {
-    var response GoogleAPIResponse
+    var response struct {
+        Result GoogleAPIResponse `json:"result"`
+        Status string            `json:"status"`
+    }
     if err := json.NewDecoder(data).Decode(&response); err != nil {
-        return response, ErrInvalidJSONResponse
+        return response.Result, ErrInvalidJSONResponse
     }
     log.Debug(fmt.Sprintf("successfully extracted google response %+v", response))
-    return response, nil
+    return response.Result, validate.Struct(response.Result)
 }
 
 // function used to get data
