@@ -58,12 +58,6 @@ func getNotificationsHandler(ctx *gin.Context) {
         return
     }
 
-    totalNotifications := len(notifications)
-    // reduce notifications if limit exceeds set
-    if len(notifications) > limit {
-        notifications = notifications[:limit]
-    }
-
     // extract filter from query if present and filter
     // notifications on metadata
     filter := ctx.DefaultQuery("filter", "")
@@ -75,6 +69,12 @@ func getNotificationsHandler(ctx *gin.Context) {
                 "message": "Invalid notification filter"})
             return
         }
+    }
+
+    totalNotifications := len(notifications)
+    // reduce notifications if limit exceeds set
+    if len(notifications) > limit {
+        notifications = notifications[:limit]
     }
     ctx.JSON(http.StatusOK, gin.H{"http_code": http.StatusOK,
         "count": totalNotifications, "notifications": notifications})
@@ -103,12 +103,6 @@ func getUnreadNotificationsHandler(ctx *gin.Context) {
         return
     }
 
-    totalNotifications := len(notifications)
-    // reduce notifications if limit exceeds set
-    if len(notifications) > limit {
-        notifications = notifications[:limit]
-    }
-
     // extract filter from query if present and filter
     // notifications on metadata
     filter := ctx.DefaultQuery("filter", "")
@@ -120,6 +114,12 @@ func getUnreadNotificationsHandler(ctx *gin.Context) {
                 "message": "Invalid notification filter"})
             return
         }
+    }
+
+    totalNotifications := len(notifications)
+    // reduce notifications if limit exceeds set
+    if len(notifications) > limit {
+        notifications = notifications[:limit]
     }
     ctx.JSON(http.StatusOK, gin.H{"http_code": http.StatusOK,
         "count": totalNotifications, "notifications": notifications})

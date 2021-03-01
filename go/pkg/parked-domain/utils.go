@@ -31,7 +31,7 @@ func GoDaddyDomainParked(body string) bool {
 
 // function used to generate notification hash
 func generateNotificationHash(businessId uuid.UUID) string {
-    notifyString := fmt.Sprintf("%s:%s", businessId, time.Now().Format("01-02-2006"))
+    notifyString := fmt.Sprintf("%s:parked-domain-check:%s", businessId, time.Now().Format("01-02-2006"))
     notificationHash := sha256.Sum256([]byte(notifyString))
     return hex.EncodeToString(notificationHash[0:])
 }

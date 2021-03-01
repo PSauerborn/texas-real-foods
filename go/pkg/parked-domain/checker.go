@@ -154,7 +154,6 @@ func(checker *ParkedDomainChecker) Run() {
                         }
                     }
                 }
-
                 // log total time elapsed to process job
                 elapsed := time.Now().Sub(start)
                 log.Info(fmt.Sprintf("finished domain-parked job. took %fs to process", elapsed.Seconds()))
