@@ -69,7 +69,7 @@ func(db *Persistence) GenerateTimeSeriesData(businessId uuid.UUID, source string
 func main() {
 	log.SetLevel(log.DebugLevel)
 
-	businessId, _ := uuid.Parse("42e15fa3-c07f-46c8-88ea-b42b38ad352d")
+	businessId, _ := uuid.Parse("9a2cae53-1104-4688-b3d9-53953f23f003")
 	// establish new connection to postgres persistence
     db := NewPersistence(postgresUrl)
     conn, err := db.Connect()
@@ -79,7 +79,7 @@ func main() {
     }
     defer conn.Close()
 
-	sources := []string{"yelp-api-connector", "scraper"}
+	sources := []string{"yelp-api-connector"}
 	for _, source := range(sources) {
 		db.GenerateTimeSeriesData(businessId, source)
 	}

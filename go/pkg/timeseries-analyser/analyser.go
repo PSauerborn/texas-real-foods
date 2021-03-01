@@ -81,12 +81,15 @@ func(analyser *TimeseriesAnalyser) AnalyseBusinessData(business connectors.Busin
                 continue
             }
             // compare timeseries entry to previous entry
-            if timeSeriesEntriesDiffer(entry, values[i - 1]) {
+            changed, fields := timeSeriesEntriesDiffer(entry, values[i - 1])
+            if changed {
                 log.Info(fmt.Sprintf("found differences in timeseries entries for %+v:%s",
                     business.BusinessName, source))
                 // generate notification message and hash
                 notificationString := fmt.Sprintf("Found change in timeseries business data for %s in source %s",
                     business.BusinessName, source)
+                notificationString = fmt.Sprintf("%s: the following fields have changed %+v",
+                    notificationString, fields)
 
                 // generate new notification
                 notification := notifications.ChangeNotification{
