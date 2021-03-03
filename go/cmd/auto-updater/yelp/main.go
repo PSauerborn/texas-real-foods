@@ -25,7 +25,7 @@ var (
     )
 )
 
-func getTRFAPIConfig() utils.APIDependencyConfig {
+func getTexasRealFoodsAPIConfig() utils.APIDependencyConfig {
     // get configuration for downstream API dependencies and convert to integer
     apiPortString := cfg.Get("trf_api_port")
     apiPort, err := strconv.Atoi(apiPortString)
@@ -55,5 +55,5 @@ func main() {
 
     // create new updater with data connector and run
     updater.New(connector, interval, cfg.Get("postgres_url"),
-        getTRFAPIConfig()).Run()
+        getTexasRealFoodsAPIConfig()).Run()
 }

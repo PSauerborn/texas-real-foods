@@ -6,24 +6,13 @@ import (
     "github.com/google/uuid"
 )
 
-type ZipCodeData struct {
-    EconomicRegion string   `json:"economic_region"`
-    County		   string   `json:"county"`
-    State		   string   `json:"state"`
-    ZipCode        string   `json:"zip_code"`
-    AreaCodes	   []string `json:"area_codes"`
-}
-
-type ZipCodeDataResponse struct {
-    HTTPCode int         `json:"http_code"`
-    Data     ZipCodeData `json:"data"`
-}
-
 type MailRelayRequest struct {
-    FirstName string    `json:"first_name" binding:"required"`
-    LastName  string    `json:"last_name"  binding:"required"`
-    ZipCode   string    `json:"zip_code"   binding:"required"`
-    EntryId   uuid.UUID `json:"entry_id"`
+    FirstName   string    `json:"first_name"    binding:"required"`
+    LastName    string    `json:"last_name"     binding:"required"`
+    ZipCode     string    `json:"zip_code"      binding:"required"`
+    Email       string    `json:"email"         binding:"required"`
+    DateOfBirth string    `json:"date_of_birth" binding:"required"`
+    EntryId     uuid.UUID `json:"entry_id"`
 }
 
 type MailRelayEntry struct {

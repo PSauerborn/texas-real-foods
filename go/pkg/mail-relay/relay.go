@@ -3,10 +3,15 @@ package mail_relay
 import (
     "fmt"
     "errors"
+    "strings"
+    "bytes"
     "net/http"
+    "io/ioutil"
+    "encoding/json"
 
-    "github.com/gin-gonic/gin"
     log "github.com/sirupsen/logrus"
+
+    apis "texas_real_foods/pkg/utils/api_accessors"
 )
 
 var (
@@ -22,132 +27,85 @@ var (
     ErrRequestLimitReached    = errors.New("Reached request limit on API")
 )
 
-type MailRelay struct {
-    PostgresURL string
-
-    // define connection settings for mail chimp
-    MailChimpAPIUrl string
-    MailChimpAPIKey string
-
-    // define settings for zip data API
-    ZipDataAPIUrl string
-
-    Engine *gin.Engine
-}
-
-func New(apiUrl, apiKey, postgresUrl, dataApiUrl string) *MailRelay {
-    router := gin.Default()
-
-    // define health check route
-    router.GET("/relay/health", healthCheckHandler)
-    router.GET("/relay/history", PostgresSessionMiddleware(postgresUrl), relayHistoryHandler)
-
-    // define route to relay mail service
-    router.POST("/relay/mail-chimp", PostgresSessionMiddleware(postgresUrl), mailRelayHandler)
-    return &MailRelay{
-        PostgresURL: postgresUrl,
-        MailChimpAPIKey: apiKey,
-        MailChimpAPIUrl: apiUrl,
-        ZipDataAPIUrl: dataApiUrl,
-        Engine: router,
+func TriggerMailChimpAsync(request MailRelayRequest, data apis.ZipCodeData) {
+    if err := TriggerMailChimp(request, data); err != nil {
+        // insert failed message into event log
+        persistence.UpdateMailEntry(request.EntryId, "failed", false)
+    } else {
+        // insert success message into event log
+        persistence.UpdateMailEntry(request.EntryId, "completed", true)
     }
 }
 
-func(relay *MailRelay) Run(listenAddress string, listenPort int) {
-    // start new go routine to process events
-    go relay.ProcessEvents()
-    // start gin gonic API to serve requests
-    connectionString := fmt.Sprintf("%s:%d", listenAddress, listenPort)
-    relay.Engine.Run(connectionString)
-}
-
-func(relay *MailRelay) ProcessEvents() {
-    // define function used to process mail chimp events async
-    log.Info("starting new event processor...")
-
-    for e := range(eventChannel) {
-        // defer function used to handle paniced go routine
-        defer func() {
-            if r := recover(); r != nil {
-                log.Warn(fmt.Sprintf("recovered paniced go routine %+v", r))
-                // restart go routine
-                go relay.ProcessEvents()
-            }
-        }()
-
-        log.Info(fmt.Sprintf("processing new event %+v", e))
-        // create new persistence instance and connect to postgres
-        db := NewPersistence(relay.PostgresURL)
-        conn, err := db.Connect()
-        if err != nil {
-            log.Error(fmt.Errorf("unable to connect to postgres server: %+v", err))
-            return
-        }
-
-        // get data for zip code (economic region) from API
-        zipData, err := relay.GetZipCodeData(e.ZipCode)
-        if err != nil {
-            log.Error(fmt.Errorf("unable to get zipcode data: %+v", err))
-            db.UpdateMailEntry(e.EntryId, "failed", false)
-            return
-        }
-        // relay mail request to Mail Chimp server
-        if err := relay.TriggerMailChimp(e, zipData.Data); err != nil {
-            log.Error(fmt.Errorf("unable to relay mail request: %+v", err))
-            db.UpdateMailEntry(e.EntryId, "failed", false)
-            return
-        }
-        // update relay job in database
-        db.UpdateMailEntry(e.EntryId, "completed", true)
-        conn.Close()
-    }
-}
-
-func(relay *MailRelay) TriggerMailChimp(request MailRelayRequest, data ZipCodeData) error {
+// function used to add a new member to a given mail chimp list
+func TriggerMailChimp(request MailRelayRequest, data apis.ZipCodeData) error {
     // function used to relay sign up request to mail chimp server
     log.Info(fmt.Sprintf("relaying request %+v", request))
-    return nil
-}
+    mailChimpRequest := map[string]interface{}{
+        "email_address": request.Email,
+        "status": "subscribed",
+        "email_type": "html",
+        "merge_fields": map[string]string{
+            "FNAME": request.FirstName,
+            "LNAME": request.LastName,
+            "ZIP": data.ZipCode,
+            "CB": "",
+            "DATEB": request.DateOfBirth,
+            "COUNTY": strings.Replace(data.County, " County", "", -1),
+            "METRO": "",
+            "ECON": data.EconomicRegion,
+        },
+        "vip": false,
+        "language": "en",
+        "tags": []string{},
+        "source": "API - Mail Relay",
+    }
+    log.Debug(fmt.Sprintf("making request to mail chimp server with body %+v", mailChimpRequest))
+    // convert request to JSON format and add to request
+    jsonRequest, err := json.Marshal(mailChimpRequest)
+    if err != nil {
+        log.Error(fmt.Errorf("unable to convert mail chimp request to JSON format: %+v", err))
+        return err
+    }
+    // generate url based on list ID and base API url
+    url := fmt.Sprintf("%s/list/%s/members", mailChimpConfig.APIUrl, mailChimpConfig.ListID)
+    req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonRequest))
+    if err != nil {
+        log.Error(fmt.Errorf("unable to trigger mail chimp request: %+v", err))
+        return err
+    }
+    // set basic auth on request
+    req.SetBasicAuth("psauerborn", mailChimpConfig.APIKey)
 
-func(relay *MailRelay) GetZipCodeData(zipcode string) (ZipCodeDataResponse, error) {
-    log.Info(fmt.Sprintf("requesting zip code data for code '%s'", zipcode))
-
-    // createnew HTTP instance and set request headers
-    req, err := http.NewRequest("GET", fmt.Sprintf("%s/zipcode/%s", relay.ZipDataAPIUrl, zipcode), nil)
-    req.Header.Set("Content-Type", "application/json")
-
-    // generate new HTTP client and execute request
-    client := &http.Client{}
+    client := http.Client{}
     resp, err := client.Do(req)
     if err != nil {
-        log.Error(fmt.Errorf("unable to execute HTTP request: %+v", err))
-        return ZipCodeDataResponse{}, err
+        log.Error(fmt.Errorf("unable to trigger mail chimp request: %+v", err))
+        return err
     }
     defer resp.Body.Close()
 
-    // handle response based on status code
     switch resp.StatusCode {
     case 200:
-        log.Info(fmt.Sprintf("successfully retrieved zip code data for '%s'", zipcode))
-        // parse response body and convert into struct
-        results, err := parseZipCodeResponse(resp.Body)
-        if err != nil {
-            log.Error(fmt.Sprintf("unable to parse JSON response: %+v", err))
-            return ZipCodeDataResponse{}, ErrInvalidAPIResponse
-        }
-        log.Info(fmt.Sprintf("zipcode API returned response %+v", results))
-        return results, nil
-    case 401:
-        log.Error(fmt.Sprintf("received unauthorized response from Zip Data API"))
-        return ZipCodeDataResponse{}, ErrUnauthorized
-    case 404:
-        log.Error(fmt.Sprintf("cannot find API results for zipcode %s", zipcode))
-        return ZipCodeDataResponse{}, ErrZipCodeNotFound
-    case 429:
-        log.Error("reached request limit on API")
-        return ZipCodeDataResponse{}, ErrRequestLimitReached
+        log.Info("successfully triggered mail chimp request")
+        return nil
     default:
-        log.Error(fmt.Errorf("received invalid response from Zip Data API with code %d", resp.StatusCode))
-        return ZipCodeDataResponse{}, ErrInvalidAPIResponse
+        body, _ := ioutil.ReadAll(resp.Body)
+        log.Error(fmt.Errorf("unable to trigger mail chimp request: received response %s", string(body)))
+        return ErrInvalidAPIResponse
     }
+}
+
+// function used to get zip code data from utils API
+func GetZipCodeData(zipcode string) (apis.ZipCodeData, error) {
+    log.Info(fmt.Sprintf("requesting zip code data for code '%s'", zipcode))
+    accessor := apis.NewUtilsAPIAccessorFromConfig(utilsAPIConfig)
+    var data apis.ZipCodeData
+    data, err := accessor.GetZipCodeData(zipcode)
+    if err != nil {
+        log.Error(fmt.Errorf("unable to retrieve zip code data for code %s: %+v", zipcode, err))
+        return data, err
+    }
+    log.Debug(fmt.Sprintf("successfully retrieve zip code data %+v", data))
+    return data, nil
 }
