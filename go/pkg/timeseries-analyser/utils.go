@@ -56,9 +56,8 @@ func timeSeriesEntriesDiffer(a, b api.TimeseriesDataEntry) (bool, []string) {
 // generate as a combination of business ID, source and the current date
 // to ensure that one unique notification is sent per business, per source
 //  per day
-func generateNotificationHash(businessId uuid.UUID, source string) string {
-    notifyString := fmt.Sprintf("%s:%s:%s", businessId,
-        source, time.Now().Format("01-02-2006"))
+func generateNotificationHash(businessId uuid.UUID, source string, ts time.Time) string {
+    notifyString := fmt.Sprintf("%s:%s:%s", businessId, source, ts)
     notificationHash := sha256.Sum256([]byte(notifyString))
     return hex.EncodeToString(notificationHash[0:])
 }
